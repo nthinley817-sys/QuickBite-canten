@@ -1,8 +1,8 @@
 // Centralized image URLs — swap these for local /assets paths whenever real
 // photography is ready. Every <SafeImg> falls back gracefully if a URL fails.
 export const IMG = {
-  momo: "https://images.unsplash.com/photo-1626804475297-411501eb3f5e?w=600&q=80&auto=format&fit=crop",
-  chickenMomo: "https://images.unsplash.com/photo-1633945274309-2a414d63e42a?w=600&q=80&auto=format&fit=crop",
+  momo: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=600&q=80&auto=format&fit=crop",
+  chickenMomo: "https://images.unsplash.com/photo-1738681336104-608b4e7dc3b0?w=600&q=80&auto=format&fit=crop",
   friedRice: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&q=80&auto=format&fit=crop",
   chickenFriedRice: "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=600&q=80&auto=format&fit=crop",
   eggFriedRice: "https://images.unsplash.com/photo-1596560548464-f010549b84d7?w=600&q=80&auto=format&fit=crop",
