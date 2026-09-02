@@ -1,6 +1,6 @@
 import Logomark from "../icons/Logomark.jsx";
 
-export default function Footer({ go }) {
+export default function Footer({ go, staffAuthed }) {
   return (
     <footer className="footer">
       <div className="wrap">
@@ -16,7 +16,7 @@ export default function Footer({ go }) {
             <a onClick={() => go("landing")} style={{ cursor: "pointer" }}>Home</a>
             <a onClick={() => go("canteens")} style={{ cursor: "pointer" }}>Menu</a>
             <a onClick={() => go("tracking")} style={{ cursor: "pointer" }}>My Order</a>
-            <a onClick={() => go("staffDashboard")} style={{ cursor: "pointer" }}>Staff</a>
+            <a onClick={() => go(staffAuthed ? "staffDashboard" : "staffLogin")} style={{ cursor: "pointer" }}>Staff</a>
           </div>
           <div>
             <h5>Location</h5>

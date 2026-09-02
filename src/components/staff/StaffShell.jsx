@@ -12,7 +12,7 @@ export const STAFF_NAV = [
   { id: "staffDataStructures", label: "Data Structures", icon: "layers" },
 ];
 
-export default function StaffShell({ view, go, children, orders }) {
+export default function StaffShell({ view, go, children, orders, onLogout }) {
   const [drawer, setDrawer] = useState(false);
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   return (
@@ -31,6 +31,7 @@ export default function StaffShell({ view, go, children, orders }) {
           <a className="side-link" onClick={() => go("landing")}><Icon name="home" size={17} /> Exit to Customer View</a>
           <a className="side-link"><Icon name="settings" size={17} /> Settings</a>
           <div className="side-link" style={{ cursor: "default" }}><Icon name="user" size={17} /> Canteen Team</div>
+          <a className="side-link" onClick={onLogout}><Icon name="logout" size={17} /> Log Out</a>
         </div>
       </aside>
 
@@ -59,6 +60,7 @@ export default function StaffShell({ view, go, children, orders }) {
             ))}
             <div className="side-foot">
               <a className="side-link" onClick={() => { go("landing"); setDrawer(false); }}><Icon name="home" size={17} /> Exit to Customer View</a>
+              <a className="side-link" onClick={() => { setDrawer(false); onLogout(); }}><Icon name="logout" size={17} /> Log Out</a>
             </div>
           </div>
         </Fragment>

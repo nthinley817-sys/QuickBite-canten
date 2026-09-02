@@ -5,7 +5,6 @@ import { CANTEENS } from "./data/canteens.js";
 import { useToasts } from "./hooks/useToasts.js";
 import { nextStatus } from "./utils/format.js";
 
-import Icon from "./components/icons/Icon.jsx";
 import Navbar from "./components/layout/Navbar.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import ToastHost from "./components/common/ToastHost.jsx";
@@ -20,6 +19,7 @@ import CartPage from "./pages/customer/CartPage.jsx";
 import OrderConfirmation from "./pages/customer/OrderConfirmation.jsx";
 import OrderTracking from "./pages/customer/OrderTracking.jsx";
 
+import StaffLogin from "./pages/staff/StaffLogin.jsx";
 import StaffDashboard from "./pages/staff/StaffDashboard.jsx";
 import OrderListPage from "./pages/staff/OrderListPage.jsx";
 import MenuManagement from "./pages/staff/MenuManagement.jsx";
@@ -38,6 +38,7 @@ export default function App() {
   const [detailItem, setDetailItem] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null); // last placed order id
   const [staffOrderDetail, setStaffOrderDetail] = useState(null);
+  const [staffAuthed, setStaffAuthed] = useState(false);
   const { toasts, push } = useToasts();
   const orderCounter = useRef(1042);
 
@@ -95,6 +96,21 @@ export default function App() {
     go("confirmation");
   };
 
+  const staffLogin = (staffId, password) => {
+    if (staffId.trim().toLowerCase() === "staff" && password === "staff123") {
+      setStaffAuthed(true);
+      go("staffDashboard");
+      push("Welcome back!", "success");
+      return true;
+    }
+    return false;
+  };
+  const staffLogout = () => {
+    setStaffAuthed(false);
+    go("staffLogin");
+    push("Signed out.");
+  };
+
   const advanceOrderStatus = (id) => {
     const order = orders.find((o) => o.id === id);
     setOrders((list) => list.map((o) => (o.id === id ? { ...o, status: nextStatus[o.status] } : o)));
@@ -103,11 +119,14 @@ export default function App() {
 
   const trackedOrder = orders.find((o) => o.id === currentOrder);
   const isStaff = STAFF_VIEWS.includes(view);
+  const isStaffLogin = view === "staffLogin";
 
   let body;
-  if (isStaff) {
+  if (isStaffLogin) {
+    body = <StaffLogin go={go} onLogin={staffLogin} />;
+  } else if (isStaff) {
     body = (
-      <StaffShell view={view} go={go} orders={orders}>
+      <StaffShell view={view} go={go} orders={orders} onLogout={staffLogout}>
         {view === "staffDashboard" && <StaffDashboard orders={orders} go={go} />}
         {view === "staffPending" && (
           <OrderListPage title="Pending Orders" subtitle="New orders waiting to be started." orders={orders} status="Pending"
@@ -134,32 +153,32 @@ export default function App() {
         {view === "canteens" && (
           <>
             <CanteenSelect go={go} />
-            <Footer go={go} />
+            <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
         {view === "menu" && (
           <>
             <MenuPage menuItems={menuItems} canteenId={canteenId} cart={cart} addToCart={addToCart} updateQty={updateQty}
               go={go} openDetail={setDetailItem} loading={loadingMenu} />
-            <Footer go={go} />
+            <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
         {view === "cart" && (
           <>
             <CartPage cart={cart} menuItems={menuItems} updateQty={updateQty} removeItem={removeItem} go={go} placeOrder={placeOrder} />
-            <Footer go={go} />
+            <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
         {view === "confirmation" && (
           <>
             <OrderConfirmation order={trackedOrder} go={go} />
-            <Footer go={go} />
+            <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
         {view === "tracking" && (
           <>
             <OrderTracking order={trackedOrder} onRefresh={() => advanceOrderStatus(trackedOrder.id)} go={go} />
-            <Footer go={go} />
+            <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
       </div>
@@ -178,9 +197,6 @@ export default function App() {
         />
       )}
       <ToastHost toasts={toasts} />
-      <button className="mode-toggle" onClick={() => go(isStaff ? "landing" : "staffDashboard")}>
-        <Icon name={isStaff ? "home" : "settings"} size={15} /> {isStaff ? "Customer View" : "Staff View"}
-      </button>
     </div>
   );
 }
