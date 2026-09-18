@@ -1,6 +1,6 @@
 # QuickBite backend
 
-Java (Spring Boot 3, Java 17) + MySQL REST API for the QuickBite React
+Java (Spring Boot 3, Java 25) + MySQL REST API for the QuickBite React
 frontend. It's a separate app from `../` (the Vite frontend) — run both at
 once during development.
 
@@ -50,7 +50,7 @@ export DB_PASSWORD=your_password
 Check first: `mvn -v`. If that fails, install it — e.g. on Windows with
 [Chocolatey](https://chocolatey.org/) run `choco install maven`, or grab it
 from https://maven.apache.org/download.cgi and add its `bin` folder to your
-PATH. (Java 17+ is required too; `java -version` to check.)
+PATH. (Java 25 is required too; `java -version` to check.)
 
 ## 4. Run it
 
