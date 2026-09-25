@@ -8,6 +8,7 @@ public record MenuItemDto(
         int price,
         String desc,
         String image,
-        boolean available
+        boolean available,
+        String canteenId
 ) {
 }

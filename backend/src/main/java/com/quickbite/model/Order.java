@@ -35,6 +35,9 @@ public class Order {
 
     private String time;
 
+    @Column(name = "table_number")
+    private int tableNumber;
+
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
@@ -62,6 +65,9 @@ public class Order {
 
     public String getTime() { return time; }
     public void setTime(String time) { this.time = time; }
+
+    public int getTableNumber() { return tableNumber; }
+    public void setTableNumber(int tableNumber) { this.tableNumber = tableNumber; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

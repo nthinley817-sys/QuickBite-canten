@@ -31,7 +31,7 @@ export default function OrderTracking({ order, onRefresh, go }) {
       <p style={{ color: "var(--text-secondary)", marginBottom: 26 }}>{order.canteen}</p>
       <div className="ticket" style={{ textAlign: "left" }}>
         <div style={{ textAlign: "center" }}>
-          <div className="order-code" style={{ marginBottom: 4 }}>{order.id}</div>
+          <div className="order-code" style={{ marginBottom: 4 }}>Table {order.tableNumber}</div>
           <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>{copy[order.status]}</p>
         </div>
         <div className="timeline">

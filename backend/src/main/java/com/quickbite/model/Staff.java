@@ -27,12 +27,16 @@ public class Staff {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "canteen_id", nullable = false)
+    private String canteenId;
+
     public Staff() {
     }
 
-    public Staff(String staffId, String passwordHash) {
+    public Staff(String staffId, String passwordHash, String canteenId) {
         this.staffId = staffId;
         this.passwordHash = passwordHash;
+        this.canteenId = canteenId;
     }
 
     public Long getId() { return id; }
@@ -43,4 +47,7 @@ public class Staff {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public String getCanteenId() { return canteenId; }
+    public void setCanteenId(String canteenId) { this.canteenId = canteenId; }
 }

@@ -1,9 +1,12 @@
 package com.quickbite.service;
 
+import com.quickbite.model.Staff;
 import com.quickbite.repository.StaffRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class StaffService {
@@ -15,10 +18,9 @@ public class StaffService {
         this.repository = repository;
     }
 
-    public boolean login(String staffId, String password) {
-        if (staffId == null || password == null) return false;
+    public Optional<Staff> authenticate(String staffId, String password) {
+        if (staffId == null || password == null) return Optional.empty();
         return repository.findByStaffId(staffId.trim())
-                .map(s -> encoder.matches(password, s.getPasswordHash()))
-                .orElse(false);
+                .filter(s -> encoder.matches(password, s.getPasswordHash()));
     }
 }

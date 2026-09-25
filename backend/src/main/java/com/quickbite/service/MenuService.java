@@ -17,8 +17,16 @@ public class MenuService {
         this.repository = repository;
     }
 
-    public List<MenuItemDto> getAll() {
-        return repository.findAll().stream().map(this::toDto).toList();
+    public List<MenuItemDto> getAll(String canteenId) {
+        List<MenuItem> items = (canteenId == null || canteenId.isBlank())
+                ? repository.findAll()
+                : repository.findByCanteenId(canteenId);
+        return items.stream().map(this::toDto).toList();
+    }
+
+    public MenuItemDto create(MenuItemDto dto) {
+        MenuItem item = new MenuItem(dto.id(), dto.name(), dto.category(), dto.price(), dto.desc(), dto.image(), dto.available(), dto.canteenId());
+        return toDto(repository.save(item));
     }
 
     public MenuItemDto update(String id, MenuItemDto dto) {
@@ -33,7 +41,14 @@ public class MenuService {
         return toDto(repository.save(item));
     }
 
+    public void delete(String id) {
+        if (!repository.existsById(id)) {
+            throw new NotFoundException("Menu item " + id + " not found");
+        }
+        repository.deleteById(id);
+    }
+
     private MenuItemDto toDto(MenuItem m) {
-        return new MenuItemDto(m.getId(), m.getName(), m.getCategory(), m.getPrice(), m.getDesc(), m.getImage(), m.isAvailable());
+        return new MenuItemDto(m.getId(), m.getName(), m.getCategory(), m.getPrice(), m.getDesc(), m.getImage(), m.isAvailable(), m.getCanteenId());
     }
 }

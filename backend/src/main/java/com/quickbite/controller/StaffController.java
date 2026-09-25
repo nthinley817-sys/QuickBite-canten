@@ -8,12 +8,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Not yet called by the frontend (StaffLogin.jsx still checks the
- * "staff"/"staff123" pair client-side), included so that check can move
- * server-side later by pointing App.jsx's staffLogin() at this endpoint —
- * seeded with the same credentials so nothing breaks meanwhile.
- */
 @RestController
 @RequestMapping("/api/staff")
 public class StaffController {
@@ -26,9 +20,8 @@ public class StaffController {
 
     @PostMapping("/login")
     public StaffLoginResponse login(@RequestBody StaffLoginRequest req) {
-        boolean ok = service.login(req.staffId(), req.password());
-        return ok
-                ? new StaffLoginResponse(true, req.staffId(), "Welcome back!")
-                : new StaffLoginResponse(false, req.staffId(), "Invalid staff ID or password.");
+        return service.authenticate(req.staffId(), req.password())
+                .map(s -> new StaffLoginResponse(true, s.getStaffId(), s.getCanteenId(), "Welcome back!"))
+                .orElseGet(() -> new StaffLoginResponse(false, req.staffId(), null, "Invalid staff ID or password."));
     }
 }

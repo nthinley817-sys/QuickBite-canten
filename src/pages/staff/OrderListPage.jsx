@@ -17,7 +17,7 @@ export default function OrderListPage({ title, subtitle, orders, status, advance
           {list.map((o) => (
             <div className={`order-card ${status === "Completed" ? "completed" : ""}`} key={o.id} onClick={() => openDetails(o)}>
               <div className="order-card-top">
-                <div><div className="order-id">{o.id}</div><div className="order-canteen">{o.canteen}</div></div>
+                <div><div className="order-id">Table {o.tableNumber}</div><div className="order-canteen">{o.canteen}</div></div>
                 <PriorityBadge priority={o.priority} />
               </div>
               <div className="order-items">{o.items.map((i) => `${i.qty} × ${i.name}`).join(", ")}</div>

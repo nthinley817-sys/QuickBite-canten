@@ -11,7 +11,7 @@ export default function OrderDetailsModal({ order, onClose, advance }) {
       <div style={{ padding: 28 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
           <div>
-            <div className="order-code" style={{ fontSize: 22, margin: "0 0 6px" }}>{order.id}</div>
+            <div className="order-code" style={{ fontSize: 22, margin: "0 0 6px" }}>Table {order.tableNumber}</div>
             <p style={{ color: "var(--text-secondary)", fontSize: 13.5 }}>{order.canteen}</p>
           </div>
           <StatusBadge status={order.status} />

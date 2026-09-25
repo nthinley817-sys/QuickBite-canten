@@ -10,6 +10,7 @@ public record OrderDto(
         int total,
         String status,
         String priority,
-        String time
+        String time,
+        int tableNumber
 ) {
 }

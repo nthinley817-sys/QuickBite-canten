@@ -31,10 +31,13 @@ public class MenuItem {
 
     private boolean available;
 
+    @Column(name = "canteen_id", nullable = false)
+    private String canteenId;
+
     public MenuItem() {
     }
 
-    public MenuItem(String id, String name, String category, int price, String desc, String image, boolean available) {
+    public MenuItem(String id, String name, String category, int price, String desc, String image, boolean available, String canteenId) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -42,6 +45,7 @@ public class MenuItem {
         this.desc = desc;
         this.image = image;
         this.available = available;
+        this.canteenId = canteenId;
     }
 
     public String getId() { return id; }
@@ -64,4 +68,7 @@ public class MenuItem {
 
     public boolean isAvailable() { return available; }
     public void setAvailable(boolean available) { this.available = available; }
+
+    public String getCanteenId() { return canteenId; }
+    public void setCanteenId(String canteenId) { this.canteenId = canteenId; }
 }

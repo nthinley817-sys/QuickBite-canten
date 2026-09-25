@@ -35,17 +35,26 @@ export default function App() {
   const [orders, setOrders] = useState([]);
   const [canteenId, setCanteenId] = useState("upper");
   const [cart, setCart] = useState([]); // { id, qty, note }
+  const [tableNumber, setTableNumber] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null); // last placed order id
   const [staffOrderDetail, setStaffOrderDetail] = useState(null);
   const [staffAuthed, setStaffAuthed] = useState(false);
+  const [staffCanteenId, setStaffCanteenId] = useState(null);
   const { toasts, push } = useToasts();
   const orderCounter = useRef(1042);
 
+  const activeCanteenId = staffAuthed ? staffCanteenId : canteenId;
+
   useEffect(() => {
-    Api.getMenu().then((d) => {
+    if (!activeCanteenId) return;
+    setLoadingMenu(true);
+    Api.getMenu(activeCanteenId).then((d) => {
       setTimeout(() => { setMenuItems(d); setLoadingMenu(false); }, 500);
     });
+  }, [activeCanteenId]);
+
+  useEffect(() => {
     Api.getOrders().then((d) => setOrders(d));
   }, []);
 
@@ -70,6 +79,10 @@ export default function App() {
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
 
   const placeOrder = () => {
+    if (!tableNumber) {
+      push("Please select your table number.", "error");
+      return;
+    }
     const items = cart.map((c) => {
       const m = menuItems.find((mm) => mm.id === c.id);
       return { name: m.name, qty: c.qty };
@@ -88,25 +101,34 @@ export default function App() {
       status: "Pending",
       priority: "Normal",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      tableNumber,
     };
     setOrders((o) => [newOrder, ...o]);
     setCurrentOrder(id);
     setCart([]);
+    setTableNumber(null);
     push("Order placed successfully.", "success");
     go("confirmation");
   };
 
-  const staffLogin = (staffId, password) => {
-    if (staffId.trim().toLowerCase() === "staff" && password === "staff123") {
-      setStaffAuthed(true);
-      go("staffDashboard");
-      push("Welcome back!", "success");
-      return true;
+  const staffLogin = async (staffId, password) => {
+    try {
+      const res = await Api.staffLogin(staffId, password);
+      if (res.success) {
+        setStaffAuthed(true);
+        setStaffCanteenId(res.canteenId);
+        go("staffDashboard");
+        push("Welcome back!", "success");
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
   const staffLogout = () => {
     setStaffAuthed(false);
+    setStaffCanteenId(null);
     go("staffLogin");
     push("Signed out.");
   };
@@ -125,8 +147,9 @@ export default function App() {
   if (isStaffLogin) {
     body = <StaffLogin go={go} onLogin={staffLogin} />;
   } else if (isStaff) {
+    const staffCanteenName = CANTEENS.find((c) => c.id === staffCanteenId)?.name;
     body = (
-      <StaffShell view={view} go={go} orders={orders} onLogout={staffLogout}>
+      <StaffShell view={view} go={go} orders={orders} onLogout={staffLogout} canteenName={staffCanteenName}>
         {view === "staffDashboard" && <StaffDashboard orders={orders} go={go} />}
         {view === "staffPending" && (
           <OrderListPage title="Pending Orders" subtitle="New orders waiting to be started." orders={orders} status="Pending"
@@ -140,7 +163,9 @@ export default function App() {
           <OrderListPage title="Completed Orders" subtitle="Orders ready or already collected." orders={orders} status="Completed"
             advance={advanceOrderStatus} actionLabel={null} openDetails={setStaffOrderDetail} />
         )}
-        {view === "staffMenu" && <MenuManagement menuItems={menuItems} setMenuItems={setMenuItems} push={push} />}
+        {view === "staffMenu" && (
+          <MenuManagement menuItems={menuItems} setMenuItems={setMenuItems} push={push} canteenId={staffCanteenId} />
+        )}
         {view === "staffSearchSort" && <SearchSortDemo orders={orders} />}
         {view === "staffDataStructures" && <DataStructuresDemo orders={orders} menuItems={menuItems} push={push} />}
       </StaffShell>
@@ -165,7 +190,8 @@ export default function App() {
         )}
         {view === "cart" && (
           <>
-            <CartPage cart={cart} menuItems={menuItems} updateQty={updateQty} removeItem={removeItem} go={go} placeOrder={placeOrder} />
+            <CartPage cart={cart} menuItems={menuItems} updateQty={updateQty} removeItem={removeItem} go={go} placeOrder={placeOrder}
+              tableNumber={tableNumber} setTableNumber={setTableNumber} />
             <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}

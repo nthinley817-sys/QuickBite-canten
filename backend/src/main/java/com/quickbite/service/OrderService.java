@@ -40,6 +40,7 @@ public class OrderService {
         order.setStatus(dto.status() != null && !dto.status().isBlank() ? dto.status() : "Pending");
         order.setPriority(dto.priority() != null && !dto.priority().isBlank() ? dto.priority() : "Normal");
         order.setTime(dto.time() != null && !dto.time().isBlank() ? dto.time() : TIME_FORMAT.format(LocalDateTime.now()));
+        order.setTableNumber(dto.tableNumber());
         order.setCreatedAt(Instant.now());
 
         List<OrderItem> items = dto.items() == null ? List.of() : dto.items().stream()
@@ -70,6 +71,6 @@ public class OrderService {
         List<OrderItemDto> items = o.getItems().stream()
                 .map(i -> new OrderItemDto(i.getName(), i.getQty()))
                 .toList();
-        return new OrderDto(o.getId(), o.getCanteen(), items, o.getTotal(), o.getStatus(), o.getPriority(), o.getTime());
+        return new OrderDto(o.getId(), o.getCanteen(), items, o.getTotal(), o.getStatus(), o.getPriority(), o.getTime(), o.getTableNumber());
     }
 }

@@ -4,28 +4,48 @@ import AvailBadge from "../../components/common/AvailBadge.jsx";
 import Icon from "../../components/icons/Icon.jsx";
 import Modal from "../../components/common/Modal.jsx";
 import MenuItemModal from "../../components/staff/MenuItemModal.jsx";
+import { Api } from "../../services/api.js";
 
-export default function MenuManagement({ menuItems, setMenuItems, push }) {
+export default function MenuManagement({ menuItems, setMenuItems, push, canteenId }) {
   const [editing, setEditing] = useState(null); // item or "new" or null
   const [deleting, setDeleting] = useState(null);
 
-  const toggleAvail = (id) => {
-    setMenuItems((items) => items.map((i) => (i.id === id ? { ...i, available: !i.available } : i)));
-    push("Menu item updated.", "success");
+  const toggleAvail = async (id) => {
+    const current = menuItems.find((i) => i.id === id);
+    const updated = { ...current, available: !current.available };
+    try {
+      await Api.updateMenuItem(updated);
+      setMenuItems((items) => items.map((i) => (i.id === id ? updated : i)));
+      push("Menu item updated.", "success");
+    } catch {
+      push("Failed to update item.", "error");
+    }
   };
-  const remove = (id) => {
-    setMenuItems((items) => items.filter((i) => i.id !== id));
-    setDeleting(null);
-    push("Menu item deleted.", "success");
+  const remove = async (id) => {
+    try {
+      await Api.deleteMenuItem(id);
+      setMenuItems((items) => items.filter((i) => i.id !== id));
+      setDeleting(null);
+      push("Menu item deleted.", "success");
+    } catch {
+      push("Failed to delete item.", "error");
+    }
   };
-  const save = (item) => {
-    setMenuItems((items) => {
-      const exists = items.find((i) => i.id === item.id);
-      if (exists) return items.map((i) => (i.id === item.id ? item : i));
-      return [...items, item];
-    });
-    push(editing === "new" ? "Menu item added." : "Menu item updated.", "success");
-    setEditing(null);
+  const save = async (item) => {
+    const isNew = editing === "new";
+    const payload = { ...item, canteenId };
+    try {
+      const saved = isNew ? await Api.createMenuItem(payload) : await Api.updateMenuItem(payload);
+      setMenuItems((items) => {
+        const exists = items.find((i) => i.id === saved.id);
+        if (exists) return items.map((i) => (i.id === saved.id ? saved : i));
+        return [...items, saved];
+      });
+      push(isNew ? "Menu item added." : "Menu item updated.", "success");
+      setEditing(null);
+    } catch {
+      push("Failed to save item.", "error");
+    }
   };
 
   return (
@@ -83,7 +103,9 @@ export default function MenuManagement({ menuItems, setMenuItems, push }) {
         ))}
       </div>
 
-      {editing && <MenuItemModal item={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save} />}
+      {editing && (
+        <MenuItemModal item={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save} canteenId={canteenId} />
+      )}
       {deleting && (
         <Modal onClose={() => setDeleting(null)} maxWidth={420}>
           <div style={{ padding: 28, textAlign: "center" }}>

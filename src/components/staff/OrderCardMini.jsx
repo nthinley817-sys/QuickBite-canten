@@ -5,7 +5,7 @@ export default function OrderCardMini({ order, onClick }) {
   return (
     <div className="order-card" onClick={onClick}>
       <div className="order-card-top">
-        <div><div className="order-id">{order.id}</div><div className="order-canteen">{order.canteen}</div></div>
+        <div><div className="order-id">Table {order.tableNumber}</div><div className="order-canteen">{order.canteen}</div></div>
         <PriorityBadge priority={order.priority} />
       </div>
       <div className="order-items">{order.items.map((i) => `${i.qty} × ${i.name}`).join(", ")}</div>

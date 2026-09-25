@@ -21,12 +21,22 @@ public class MenuController {
     }
 
     @GetMapping
-    public List<MenuItemDto> getMenu() {
-        return service.getAll();
+    public List<MenuItemDto> getMenu(@RequestParam(required = false) String canteen) {
+        return service.getAll(canteen);
+    }
+
+    @PostMapping
+    public MenuItemDto createMenuItem(@RequestBody MenuItemDto dto) {
+        return service.create(dto);
     }
 
     @PutMapping("/{id}")
     public MenuItemDto updateMenuItem(@PathVariable String id, @RequestBody MenuItemDto dto) {
         return service.update(id, dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteMenuItem(@PathVariable String id) {
+        service.delete(id);
     }
 }

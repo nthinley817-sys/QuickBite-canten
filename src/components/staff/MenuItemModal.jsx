@@ -4,8 +4,8 @@ import SafeImg from "../common/SafeImg.jsx";
 import { CATEGORIES } from "../../data/menu.js";
 import { IMG } from "../../data/images.js";
 
-export default function MenuItemModal({ item, onClose, onSave }) {
-  const blank = { id: "M0" + Math.floor(100 + Math.random() * 899), name: "", category: CATEGORIES[1], price: "", desc: "", image: IMG.momo, available: true };
+export default function MenuItemModal({ item, onClose, onSave, canteenId }) {
+  const blank = { id: `${canteenId}-M0${Math.floor(100 + Math.random() * 899)}`, name: "", category: CATEGORIES[1], price: "", desc: "", image: IMG.momo, available: true };
   const [form, setForm] = useState(item || blank);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   return (

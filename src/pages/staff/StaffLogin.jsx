@@ -9,17 +9,13 @@ export default function StaffLogin({ go, onLogin }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-    // Small delay so the button's loading state is visible — mirrors the
-    // latency a real auth request would have.
-    setTimeout(() => {
-      const ok = onLogin(staffId, password);
-      if (!ok) setError("Incorrect staff ID or password.");
-      setSubmitting(false);
-    }, 400);
+    const ok = await onLogin(staffId, password);
+    if (!ok) setError("Incorrect staff ID or password.");
+    setSubmitting(false);
   };
 
   return (
@@ -101,7 +97,7 @@ export default function StaffLogin({ go, onLogin }) {
           </form>
 
           <div className="info-note" style={{ marginTop: 20 }}>
-            <strong>Demo access</strong> — Staff ID: <strong>staff</strong> · Password: <strong>staff123</strong>
+            <strong>Demo access</strong> — Upper Canteen: <strong>upper_staff</strong> · Lower Canteen: <strong>lower_staff</strong> · Password: <strong>staff123</strong>
           </div>
         </div>
 

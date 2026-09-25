@@ -20,7 +20,7 @@ export default function OrderConfirmation({ order, go }) {
       <div className="ticket">
         <div className="success-ring"><Icon name="checkCircle" size={38} stroke="var(--success)" /></div>
         <h2 style={{ fontSize: 24 }}>Order Confirmed!</h2>
-        <div className="order-code">{order.id}</div>
+        <div className="order-code">Table {order.tableNumber}</div>
         <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 6 }}>{order.canteen}</p>
         <p style={{ color: "var(--text-secondary)", fontSize: 13.5, marginBottom: 20 }}>Please wait for your order to be prepared.</p>
         <div style={{ textAlign: "left", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "16px 0", margin: "0 0 20px" }}>

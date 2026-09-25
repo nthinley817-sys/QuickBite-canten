@@ -3,7 +3,9 @@ import EmptyState from "../../components/common/EmptyState.jsx";
 import Icon from "../../components/icons/Icon.jsx";
 import { money } from "../../utils/format.js";
 
-export default function CartPage({ cart, menuItems, updateQty, removeItem, go, placeOrder }) {
+const TABLE_NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
+
+export default function CartPage({ cart, menuItems, updateQty, removeItem, go, placeOrder, tableNumber, setTableNumber }) {
   const items = cart.map((c) => ({ ...c, menuItem: menuItems.find((m) => m.id === c.id) })).filter((c) => c.menuItem);
   const subtotal = items.reduce((s, i) => s + i.menuItem.price * i.qty, 0);
 
@@ -53,14 +55,33 @@ export default function CartPage({ cart, menuItems, updateQty, removeItem, go, p
             <div className="summary-row"><span>Items ({items.reduce((s, i) => s + i.qty, 0)})</span><span>{money(subtotal)}</span></div>
             <div className="summary-row"><span>Subtotal</span><span>{money(subtotal)}</span></div>
             <div className="summary-row total"><span>Total</span><span>{money(subtotal)}</span></div>
-            <button className="btn btn-primary btn-block" style={{ marginTop: 16 }} onClick={placeOrder}>Place Order</button>
+            <div className="field" style={{ marginTop: 16, marginBottom: 0 }}>
+              <label htmlFor="tableNumber">Table Number</label>
+              <select id="tableNumber" value={tableNumber || ""} onChange={(e) => setTableNumber(Number(e.target.value) || null)}>
+                <option value="" disabled>Select your table</option>
+                {TABLE_NUMBERS.map((n) => <option key={n} value={n}>Table {n}</option>)}
+              </select>
+            </div>
+            <button className="btn btn-primary btn-block" style={{ marginTop: 16 }} disabled={!tableNumber} onClick={placeOrder}>Place Order</button>
           </div>
         </div>
       </div>
       <div className="sticky-cta mobile-only" style={{ display: "none" }}>
-        <div className="wrap" style={{ padding: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Total</div><div style={{ fontWeight: 800, fontSize: 19 }}>{money(subtotal)}</div></div>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={placeOrder}>Place Order</button>
+        <div className="wrap" style={{ padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <select
+              value={tableNumber || ""}
+              onChange={(e) => setTableNumber(Number(e.target.value) || null)}
+              aria-label="Table Number"
+            >
+              <option value="" disabled>Select your table</option>
+              {TABLE_NUMBERS.map((n) => <option key={n} value={n}>Table {n}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Total</div><div style={{ fontWeight: 800, fontSize: 19 }}>{money(subtotal)}</div></div>
+            <button className="btn btn-primary" style={{ flex: 1 }} disabled={!tableNumber} onClick={placeOrder}>Place Order</button>
+          </div>
         </div>
       </div>
     </div>
