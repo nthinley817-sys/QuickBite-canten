@@ -8,6 +8,8 @@ import { nextStatus } from "./utils/format.js";
 import Navbar from "./components/layout/Navbar.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import ToastHost from "./components/common/ToastHost.jsx";
+import Modal from "./components/common/Modal.jsx";
+import Icon from "./components/icons/Icon.jsx";
 import FoodDetailModal from "./components/customer/FoodDetailModal.jsx";
 import StaffShell from "./components/staff/StaffShell.jsx";
 import OrderDetailsModal from "./components/staff/OrderDetailsModal.jsx";
@@ -39,6 +41,7 @@ export default function App() {
   const [detailItem, setDetailItem] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null); // last placed order id
   const [staffOrderDetail, setStaffOrderDetail] = useState(null);
+  const [deletingOrder, setDeletingOrder] = useState(null);
   const [staffAuthed, setStaffAuthed] = useState(false);
   const [staffCanteenId, setStaffCanteenId] = useState(null);
   const { toasts, push } = useToasts();
@@ -146,6 +149,18 @@ export default function App() {
     if (order) push(`Order marked as ${nextStatus[order.status]}.`, "success");
   };
 
+  const deleteOrder = async (id) => {
+    try {
+      await Api.deleteOrder(id);
+      setOrders((list) => list.filter((o) => o.id !== id));
+      setDeletingOrder(null);
+      setStaffOrderDetail(null);
+      push("Order removed.", "success");
+    } catch {
+      push("Failed to remove order.", "error");
+    }
+  };
+
   const trackedOrder = orders.find((o) => o.id === currentOrder);
   const isStaff = STAFF_VIEWS.includes(view);
   const isStaffLogin = view === "staffLogin";
@@ -168,7 +183,7 @@ export default function App() {
         )}
         {view === "staffCompleted" && (
           <OrderListPage title="Completed Orders" subtitle="Orders ready or already collected." orders={orders} status="Completed"
-            advance={advanceOrderStatus} actionLabel={null} openDetails={setStaffOrderDetail} />
+            advance={advanceOrderStatus} actionLabel={null} openDetails={setStaffOrderDetail} onDelete={setDeletingOrder} />
         )}
         {view === "staffMenu" && (
           <MenuManagement menuItems={menuItems} setMenuItems={setMenuItems} push={push} canteenId={staffCanteenId} />
@@ -227,7 +242,23 @@ export default function App() {
           order={staffOrderDetail}
           onClose={() => setStaffOrderDetail(null)}
           advance={(id) => { advanceOrderStatus(id); setStaffOrderDetail(null); }}
+          onDelete={(order) => { setStaffOrderDetail(null); setDeletingOrder(order); }}
         />
+      )}
+      {deletingOrder && (
+        <Modal onClose={() => setDeletingOrder(null)} maxWidth={420}>
+          <div style={{ padding: 28, textAlign: "center" }}>
+            <div className="empty-state" style={{ padding: 0 }}>
+              <div className="glyph" style={{ background: "var(--error-bg)", color: "var(--error)" }}><Icon name="trash" size={30} /></div>
+              <h3>Remove order for Table {deletingOrder.tableNumber}?</h3>
+              <p>This permanently deletes the order record. This can't be undone.</p>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setDeletingOrder(null)}>Cancel</button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => deleteOrder(deletingOrder.id)}>Delete</button>
+            </div>
+          </div>
+        </Modal>
       )}
       <ToastHost toasts={toasts} />
     </div>

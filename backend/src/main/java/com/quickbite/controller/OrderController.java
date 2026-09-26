@@ -36,4 +36,9 @@ public class OrderController {
     public OrderDto updateStatus(@PathVariable String id, @RequestBody UpdateStatusRequest req) {
         return service.updateStatus(id, req.status());
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteOrder(@PathVariable String id) {
+        service.delete(id);
+    }
 }

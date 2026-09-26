@@ -23,6 +23,7 @@ export const Api = {
   createOrder: (order) => request("/orders", { method: "POST", body: JSON.stringify(order) }),
   updateOrderStatus: (id, status) =>
     request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  deleteOrder: (id) => request(`/orders/${id}`, { method: "DELETE" }),
   createMenuItem: (item) => request("/menu", { method: "POST", body: JSON.stringify(item) }),
   updateMenuItem: (item) => request(`/menu/${item.id}`, { method: "PUT", body: JSON.stringify(item) }),
   deleteMenuItem: (id) => request(`/menu/${id}`, { method: "DELETE" }),

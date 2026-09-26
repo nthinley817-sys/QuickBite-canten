@@ -3,7 +3,7 @@ import StatusBadge from "../common/StatusBadge.jsx";
 import PriorityBadge from "../common/PriorityBadge.jsx";
 import { money } from "../../utils/format.js";
 
-export default function OrderDetailsModal({ order, onClose, advance }) {
+export default function OrderDetailsModal({ order, onClose, advance, onDelete }) {
   if (!order) return null;
   const actionMap = { Pending: "Start Preparing", Processing: "Mark Completed", Completed: null };
   return (
@@ -27,7 +27,7 @@ export default function OrderDetailsModal({ order, onClose, advance }) {
         {actionMap[order.status] ? (
           <button className="btn btn-primary btn-block" onClick={() => { advance(order.id); onClose(); }}>{actionMap[order.status]}</button>
         ) : (
-          <button className="btn btn-outline btn-block" disabled>Completed</button>
+          <button className="btn btn-danger btn-block" onClick={() => onDelete(order)}>Remove Order</button>
         )}
       </div>
     </Modal>

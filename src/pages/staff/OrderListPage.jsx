@@ -1,8 +1,9 @@
 import EmptyState from "../../components/common/EmptyState.jsx";
 import PriorityBadge from "../../components/common/PriorityBadge.jsx";
+import Icon from "../../components/icons/Icon.jsx";
 import { money } from "../../utils/format.js";
 
-export default function OrderListPage({ title, subtitle, orders, status, advance, actionLabel, openDetails }) {
+export default function OrderListPage({ title, subtitle, orders, status, advance, actionLabel, openDetails, onDelete }) {
   const list = orders.filter((o) => o.status === status);
   return (
     <div>
@@ -32,6 +33,15 @@ export default function OrderListPage({ title, subtitle, orders, status, advance
                   onClick={(e) => { e.stopPropagation(); advance(o.id); }}
                 >
                   {actionLabel}
+                </button>
+              )}
+              {status === "Completed" && onDelete && (
+                <button
+                  className="btn btn-outline btn-sm btn-block"
+                  style={{ marginTop: 14, color: "var(--error)", borderColor: "var(--error)" }}
+                  onClick={(e) => { e.stopPropagation(); onDelete(o); }}
+                >
+                  <Icon name="trash" size={15} /> Remove Order
                 </button>
               )}
             </div>

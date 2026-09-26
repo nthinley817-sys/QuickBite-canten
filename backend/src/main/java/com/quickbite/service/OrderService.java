@@ -62,6 +62,13 @@ public class OrderService {
         return toDto(repository.save(order));
     }
 
+    public void delete(String id) {
+        if (!repository.existsById(id)) {
+            throw new NotFoundException("Order " + id + " not found");
+        }
+        repository.deleteById(id);
+    }
+
     private String generateId() {
         long n = repository.count() + 1001;
         return "QB-" + n;
