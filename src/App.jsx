@@ -49,9 +49,16 @@ export default function App() {
   useEffect(() => {
     if (!activeCanteenId) return;
     setLoadingMenu(true);
-    Api.getMenu(activeCanteenId).then((d) => {
-      setTimeout(() => { setMenuItems(d); setLoadingMenu(false); }, 500);
-    });
+    Api.getMenu(activeCanteenId)
+      .then((d) => {
+        setTimeout(() => { setMenuItems(d); setLoadingMenu(false); }, 500);
+      })
+      .catch((err) => {
+        console.error(err);
+        setMenuItems([]);
+        setLoadingMenu(false);
+        push("Couldn't load the menu. Is the backend running?", "error");
+      });
   }, [activeCanteenId]);
 
   useEffect(() => {
