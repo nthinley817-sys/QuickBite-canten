@@ -48,6 +48,21 @@ public class DataSeeder implements CommandLineRunner {
         seedMenu();
         seedOrders();
         seedStaff();
+        backfillOrderCanteenIds();
+    }
+
+    /** Fixes orders saved before canteenId existed (null canteenId), so
+     *  staff canteen filtering doesn't silently hide older rows. Cheap and
+     *  idempotent — a no-op once every order has a canteenId. */
+    private void backfillOrderCanteenIds() {
+        List<Order> toFix = orderRepo.findAll().stream()
+                .filter(o -> o.getCanteenId() == null)
+                .toList();
+        if (toFix.isEmpty()) return;
+        for (Order o : toFix) {
+            o.setCanteenId(o.getCanteen() != null && o.getCanteen().startsWith("Upper") ? "upper" : "lower");
+        }
+        orderRepo.saveAll(toFix);
     }
 
     private void seedCanteens() {
@@ -193,6 +208,7 @@ public class DataSeeder implements CommandLineRunner {
         Order o = new Order();
         o.setId(id);
         o.setCanteen(canteen);
+        o.setCanteenId(canteen.startsWith("Upper") ? "upper" : "lower");
         o.setTotal(total);
         o.setStatus(status);
         o.setPriority(priority);

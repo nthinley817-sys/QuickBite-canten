@@ -36,6 +36,7 @@ public class OrderService {
         Order order = new Order();
         order.setId(dto.id() != null && !dto.id().isBlank() ? dto.id() : generateId());
         order.setCanteen(dto.canteen());
+        order.setCanteenId(dto.canteenId());
         order.setTotal(dto.total());
         order.setStatus(dto.status() != null && !dto.status().isBlank() ? dto.status() : "Pending");
         order.setPriority(dto.priority() != null && !dto.priority().isBlank() ? dto.priority() : "Normal");
@@ -78,6 +79,6 @@ public class OrderService {
         List<OrderItemDto> items = o.getItems().stream()
                 .map(i -> new OrderItemDto(i.getName(), i.getQty()))
                 .toList();
-        return new OrderDto(o.getId(), o.getCanteen(), items, o.getTotal(), o.getStatus(), o.getPriority(), o.getTime(), o.getTableNumber());
+        return new OrderDto(o.getId(), o.getCanteen(), o.getCanteenId(), items, o.getTotal(), o.getStatus(), o.getPriority(), o.getTime(), o.getTableNumber());
     }
 }

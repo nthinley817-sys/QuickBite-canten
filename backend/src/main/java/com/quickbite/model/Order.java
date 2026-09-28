@@ -27,6 +27,9 @@ public class Order {
 
     private String canteen;
 
+    @Column(name = "canteen_id")
+    private String canteenId;
+
     private int total;
 
     private String status;
@@ -53,6 +56,9 @@ public class Order {
 
     public String getCanteen() { return canteen; }
     public void setCanteen(String canteen) { this.canteen = canteen; }
+
+    public String getCanteenId() { return canteenId; }
+    public void setCanteenId(String canteenId) { this.canteenId = canteenId; }
 
     public int getTotal() { return total; }
     public void setTotal(int total) { this.total = total; }

@@ -30,8 +30,17 @@ import DataStructuresDemo from "./pages/staff/DataStructuresDemo.jsx";
 
 const STAFF_VIEWS = ["staffDashboard", "staffPending", "staffProcessing", "staffCompleted", "staffMenu", "staffSearchSort", "staffDataStructures"];
 
+const STAFF_SESSION_KEY = "qb_staff_session";
+const savedStaffSession = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(STAFF_SESSION_KEY));
+  } catch {
+    return null;
+  }
+})();
+
 export default function App() {
-  const [view, setView] = useState("landing");
+  const [view, setView] = useState(savedStaffSession ? "staffDashboard" : "landing");
   const [menuItems, setMenuItems] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [orders, setOrders] = useState([]);
@@ -42,8 +51,8 @@ export default function App() {
   const [currentOrder, setCurrentOrder] = useState(null); // last placed order id
   const [staffOrderDetail, setStaffOrderDetail] = useState(null);
   const [deletingOrder, setDeletingOrder] = useState(null);
-  const [staffAuthed, setStaffAuthed] = useState(false);
-  const [staffCanteenId, setStaffCanteenId] = useState(null);
+  const [staffAuthed, setStaffAuthed] = useState(!!savedStaffSession);
+  const [staffCanteenId, setStaffCanteenId] = useState(savedStaffSession?.canteenId ?? null);
   const { toasts, push } = useToasts();
   const orderCounter = useRef(1042);
 
@@ -88,7 +97,7 @@ export default function App() {
   const removeItem = (id) => setCart((c) => c.filter((x) => x.id !== id));
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!tableNumber) {
       push("Please select your table number.", "error");
       return;
@@ -106,6 +115,7 @@ export default function App() {
     const newOrder = {
       id,
       canteen: CANTEENS.find((c) => c.id === canteenId).name,
+      canteenId,
       items,
       total,
       status: "Pending",
@@ -113,12 +123,17 @@ export default function App() {
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       tableNumber,
     };
-    setOrders((o) => [newOrder, ...o]);
-    setCurrentOrder(id);
-    setCart([]);
-    setTableNumber(null);
-    push("Order placed successfully.", "success");
-    go("confirmation");
+    try {
+      const saved = await Api.createOrder(newOrder);
+      setOrders((o) => [saved, ...o]);
+      setCurrentOrder(saved.id);
+      setCart([]);
+      setTableNumber(null);
+      push("Order placed successfully.", "success");
+      go("confirmation");
+    } catch {
+      push("Failed to place order. Please try again.", "error");
+    }
   };
 
   const staffLogin = async (staffId, password) => {
@@ -127,6 +142,7 @@ export default function App() {
       if (res.success) {
         setStaffAuthed(true);
         setStaffCanteenId(res.canteenId);
+        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify({ canteenId: res.canteenId }));
         go("staffDashboard");
         push("Welcome back!", "success");
         return true;
@@ -139,14 +155,31 @@ export default function App() {
   const staffLogout = () => {
     setStaffAuthed(false);
     setStaffCanteenId(null);
+    localStorage.removeItem(STAFF_SESSION_KEY);
     go("staffLogin");
     push("Signed out.");
   };
 
-  const advanceOrderStatus = (id) => {
+  const advanceOrderStatus = async (id) => {
     const order = orders.find((o) => o.id === id);
-    setOrders((list) => list.map((o) => (o.id === id ? { ...o, status: nextStatus[o.status] } : o)));
-    if (order) push(`Order marked as ${nextStatus[order.status]}.`, "success");
+    if (!order) return;
+    const newStatus = nextStatus[order.status];
+    try {
+      await Api.updateOrderStatus(id, newStatus);
+      setOrders((list) => list.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
+      push(`Order marked as ${newStatus}.`, "success");
+    } catch {
+      push("Failed to update order status.", "error");
+    }
+  };
+
+  const refreshOrders = async () => {
+    try {
+      const d = await Api.getOrders();
+      setOrders(d);
+    } catch {
+      push("Failed to refresh order status.", "error");
+    }
   };
 
   const deleteOrder = async (id) => {
@@ -164,6 +197,7 @@ export default function App() {
   const trackedOrder = orders.find((o) => o.id === currentOrder);
   const isStaff = STAFF_VIEWS.includes(view);
   const isStaffLogin = view === "staffLogin";
+  const staffOrders = orders.filter((o) => o.canteenId === staffCanteenId);
 
   let body;
   if (isStaffLogin) {
@@ -171,25 +205,25 @@ export default function App() {
   } else if (isStaff) {
     const staffCanteenName = CANTEENS.find((c) => c.id === staffCanteenId)?.name;
     body = (
-      <StaffShell view={view} go={go} orders={orders} onLogout={staffLogout} canteenName={staffCanteenName}>
-        {view === "staffDashboard" && <StaffDashboard orders={orders} go={go} />}
+      <StaffShell view={view} go={go} orders={staffOrders} onLogout={staffLogout} canteenName={staffCanteenName}>
+        {view === "staffDashboard" && <StaffDashboard orders={staffOrders} go={go} />}
         {view === "staffPending" && (
-          <OrderListPage title="Pending Orders" subtitle="New orders waiting to be started." orders={orders} status="Pending"
+          <OrderListPage title="Pending Orders" subtitle="New orders waiting to be started." orders={staffOrders} status="Pending"
             advance={advanceOrderStatus} actionLabel="Start Preparing" openDetails={setStaffOrderDetail} />
         )}
         {view === "staffProcessing" && (
-          <OrderListPage title="Processing Orders" subtitle="Orders currently being prepared." orders={orders} status="Processing"
+          <OrderListPage title="Processing Orders" subtitle="Orders currently being prepared." orders={staffOrders} status="Processing"
             advance={advanceOrderStatus} actionLabel="Mark Completed" openDetails={setStaffOrderDetail} />
         )}
         {view === "staffCompleted" && (
-          <OrderListPage title="Completed Orders" subtitle="Orders ready or already collected." orders={orders} status="Completed"
+          <OrderListPage title="Completed Orders" subtitle="Orders ready or already collected." orders={staffOrders} status="Completed"
             advance={advanceOrderStatus} actionLabel={null} openDetails={setStaffOrderDetail} onDelete={setDeletingOrder} />
         )}
         {view === "staffMenu" && (
           <MenuManagement menuItems={menuItems} setMenuItems={setMenuItems} push={push} canteenId={staffCanteenId} />
         )}
-        {view === "staffSearchSort" && <SearchSortDemo orders={orders} />}
-        {view === "staffDataStructures" && <DataStructuresDemo orders={orders} menuItems={menuItems} push={push} />}
+        {view === "staffSearchSort" && <SearchSortDemo orders={staffOrders} />}
+        {view === "staffDataStructures" && <DataStructuresDemo orders={staffOrders} menuItems={menuItems} push={push} />}
       </StaffShell>
     );
   } else {
@@ -225,7 +259,7 @@ export default function App() {
         )}
         {view === "tracking" && (
           <>
-            <OrderTracking order={trackedOrder} onRefresh={() => advanceOrderStatus(trackedOrder.id)} go={go} />
+            <OrderTracking order={trackedOrder} onRefresh={refreshOrders} go={go} />
             <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}

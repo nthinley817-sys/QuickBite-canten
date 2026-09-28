@@ -6,6 +6,7 @@ import java.util.List;
 public record OrderDto(
         String id,
         String canteen,
+        String canteenId,
         List<OrderItemDto> items,
         int total,
         String status,

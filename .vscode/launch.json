@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "QuickbiteApplication",
+            "request": "launch",
+            "mainClass": "com.quickbite.QuickbiteApplication",
+            "projectName": "quickbite-backend",
+            "env": {
+                "DB_URL": "jdbc:postgresql://localhost:5433/quickbite",
+                "DB_USERNAME": "postgres",
+                "DB_PASSWORD": ""
+            }
+        }
+    ]
+}
