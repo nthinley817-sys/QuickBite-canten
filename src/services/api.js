@@ -10,7 +10,14 @@ async function request(path, options = {}) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`API ${path} failed (${res.status}): ${body || res.statusText}`);
+    // The backend sends {"error": "..."} for validation failures; surface that
+    // message so the UI can show it instead of a generic one.
+    let message = "";
+    try { message = JSON.parse(body).error || ""; } catch { /* not JSON */ }
+    const err = new Error(message || `API ${path} failed (${res.status}): ${body || res.statusText}`);
+    err.status = res.status;
+    err.userMessage = message || null;
+    throw err;
   }
   if (res.status === 204) return null;
   return res.json();

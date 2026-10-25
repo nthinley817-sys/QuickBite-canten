@@ -5,7 +5,7 @@ import { CATEGORIES } from "../../data/menu.js";
 import { IMG } from "../../data/images.js";
 
 export default function MenuItemModal({ item, onClose, onSave, canteenId }) {
-  const blank = { id: `${canteenId}-M0${Math.floor(100 + Math.random() * 899)}`, name: "", category: CATEGORIES[1], price: "", desc: "", image: IMG.momo, available: true };
+  const blank = { name: "", category: CATEGORIES[1], price: "", desc: "", image: IMG.momo, available: true };
   const [form, setForm] = useState(item || blank);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   return (
@@ -13,7 +13,7 @@ export default function MenuItemModal({ item, onClose, onSave, canteenId }) {
       <div style={{ padding: 28 }}>
         <h3 style={{ fontSize: 20, marginBottom: 20 }}>{item ? "Edit Menu Item" : "Add Menu Item"}</h3>
         <SafeImg src={form.image} alt="preview" style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 12, marginBottom: 16 }} />
-        <div className="field"><label>Item ID</label><input value={form.id} disabled /></div>
+        <div className="field"><label>Item ID</label><input value={form.id ?? "Assigned when saved"} disabled /></div>
         <div className="field"><label>Name</label><input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Chicken Momo" /></div>
         <div className="field-row">
           <div className="field">

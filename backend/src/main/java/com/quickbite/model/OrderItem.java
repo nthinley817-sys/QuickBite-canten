@@ -1,6 +1,7 @@
 package com.quickbite.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,6 +18,10 @@ public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Null on orders saved before items carried their menu item id. */
+    @Column(name = "menu_item_id")
+    private String menuItemId;
 
     private String name;
 
@@ -37,6 +42,9 @@ public class OrderItem {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getMenuItemId() { return menuItemId; }
+    public void setMenuItemId(String menuItemId) { this.menuItemId = menuItemId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

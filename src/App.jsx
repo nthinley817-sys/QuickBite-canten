@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 import { Api } from "./services/api.js";
 import { CANTEENS } from "./data/canteens.js";
@@ -30,6 +30,8 @@ import DataStructuresDemo from "./pages/staff/DataStructuresDemo.jsx";
 
 const STAFF_VIEWS = ["staffDashboard", "staffPending", "staffProcessing", "staffCompleted", "staffMenu", "staffSearchSort", "staffDataStructures"];
 
+const ORDER_POLL_MS = 8000;
+
 const STAFF_SESSION_KEY = "qb_staff_session";
 const savedStaffSession = (() => {
   try {
@@ -54,7 +56,6 @@ export default function App() {
   const [staffAuthed, setStaffAuthed] = useState(!!savedStaffSession);
   const [staffCanteenId, setStaffCanteenId] = useState(savedStaffSession?.canteenId ?? null);
   const { toasts, push } = useToasts();
-  const orderCounter = useRef(1042);
 
   const activeCanteenId = staffAuthed ? staffCanteenId : canteenId;
 
@@ -74,8 +75,20 @@ export default function App() {
   }, [activeCanteenId]);
 
   useEffect(() => {
-    Api.getOrders().then((d) => setOrders(d));
+    Api.getOrders().then((d) => setOrders(d)).catch((err) => console.error(err));
   }, []);
+
+  // Keep orders live while someone is watching them: staff see new orders
+  // arrive, customers see their status change, without reloading the page.
+  const watchingOrders = STAFF_VIEWS.includes(view) || view === "tracking" || view === "confirmation";
+  useEffect(() => {
+    if (!watchingOrders) return;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      Api.getOrders().then((d) => setOrders(d)).catch(() => { /* try again next tick */ });
+    }, ORDER_POLL_MS);
+    return () => clearInterval(id);
+  }, [watchingOrders]);
 
   const go = (v, opts) => {
     setView(v);
@@ -102,26 +115,12 @@ export default function App() {
       push("Please select your table number.", "error");
       return;
     }
-    const items = cart.map((c) => {
-      const m = menuItems.find((mm) => mm.id === c.id);
-      return { name: m.name, qty: c.qty };
-    });
-    const total = cart.reduce((s, c) => {
-      const m = menuItems.find((mm) => mm.id === c.id);
-      return s + m.price * c.qty;
-    }, 0);
-    orderCounter.current += 1;
-    const id = "QB-" + orderCounter.current;
+    // The backend assigns the order id, looks up names/prices and works out
+    // the total itself — we only say what was ordered and where.
     const newOrder = {
-      id,
-      canteen: CANTEENS.find((c) => c.id === canteenId).name,
       canteenId,
-      items,
-      total,
-      status: "Pending",
-      priority: "Normal",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       tableNumber,
+      items: cart.map((c) => ({ menuItemId: c.id, qty: c.qty })),
     };
     try {
       const saved = await Api.createOrder(newOrder);
@@ -131,8 +130,8 @@ export default function App() {
       setTableNumber(null);
       push("Order placed successfully.", "success");
       go("confirmation");
-    } catch {
-      push("Failed to place order. Please try again.", "error");
+    } catch (err) {
+      push(err.userMessage || "Failed to place order. Please try again.", "error");
     }
   };
 
@@ -168,8 +167,8 @@ export default function App() {
       await Api.updateOrderStatus(id, newStatus);
       setOrders((list) => list.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
       push(`Order marked as ${newStatus}.`, "success");
-    } catch {
-      push("Failed to update order status.", "error");
+    } catch (err) {
+      push(err.userMessage || "Failed to update order status.", "error");
     }
   };
 

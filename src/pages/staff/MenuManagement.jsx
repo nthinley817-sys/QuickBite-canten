@@ -17,8 +17,8 @@ export default function MenuManagement({ menuItems, setMenuItems, push, canteenI
       await Api.updateMenuItem(updated);
       setMenuItems((items) => items.map((i) => (i.id === id ? updated : i)));
       push("Menu item updated.", "success");
-    } catch {
-      push("Failed to update item.", "error");
+    } catch (err) {
+      push(err.userMessage || "Failed to update item.", "error");
     }
   };
   const remove = async (id) => {
@@ -33,7 +33,9 @@ export default function MenuManagement({ menuItems, setMenuItems, push, canteenI
   };
   const save = async (item) => {
     const isNew = editing === "new";
-    const payload = { ...item, canteenId };
+    // New items get their id from the backend, so it can't clash with an existing one.
+    const { id, ...rest } = item;
+    const payload = isNew ? { ...rest, canteenId } : { ...item, canteenId };
     try {
       const saved = isNew ? await Api.createMenuItem(payload) : await Api.updateMenuItem(payload);
       setMenuItems((items) => {
@@ -43,8 +45,8 @@ export default function MenuManagement({ menuItems, setMenuItems, push, canteenI
       });
       push(isNew ? "Menu item added." : "Menu item updated.", "success");
       setEditing(null);
-    } catch {
-      push("Failed to save item.", "error");
+    } catch (err) {
+      push(err.userMessage || "Failed to save item.", "error");
     }
   };
 
