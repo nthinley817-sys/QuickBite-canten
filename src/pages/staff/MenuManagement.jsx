@@ -6,7 +6,7 @@ import Modal from "../../components/common/Modal.jsx";
 import MenuItemModal from "../../components/staff/MenuItemModal.jsx";
 import { Api } from "../../services/api.js";
 
-export default function MenuManagement({ menuItems, setMenuItems, push, canteenId }) {
+export default function MenuManagement({ menuItems, setMenuItems, push, canteenId, onActionFailed }) {
   const [editing, setEditing] = useState(null); // item or "new" or null
   const [deleting, setDeleting] = useState(null);
 
@@ -18,7 +18,7 @@ export default function MenuManagement({ menuItems, setMenuItems, push, canteenI
       setMenuItems((items) => items.map((i) => (i.id === id ? updated : i)));
       push("Menu item updated.", "success");
     } catch (err) {
-      push(err.userMessage || "Failed to update item.", "error");
+      onActionFailed(err, "Failed to update item.");
     }
   };
   const remove = async (id) => {
@@ -27,8 +27,8 @@ export default function MenuManagement({ menuItems, setMenuItems, push, canteenI
       setMenuItems((items) => items.filter((i) => i.id !== id));
       setDeleting(null);
       push("Menu item deleted.", "success");
-    } catch {
-      push("Failed to delete item.", "error");
+    } catch (err) {
+      onActionFailed(err, "Failed to delete item.");
     }
   };
   const save = async (item) => {
@@ -46,7 +46,7 @@ export default function MenuManagement({ menuItems, setMenuItems, push, canteenI
       push(isNew ? "Menu item added." : "Menu item updated.", "success");
       setEditing(null);
     } catch (err) {
-      push(err.userMessage || "Failed to save item.", "error");
+      onActionFailed(err, "Failed to save item.");
     }
   };
 

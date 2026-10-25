@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-import { Api } from "./services/api.js";
+import { Api, setStaffToken } from "./services/api.js";
 import { CANTEENS } from "./data/canteens.js";
 import { useToasts } from "./hooks/useToasts.js";
 import { nextStatus } from "./utils/format.js";
@@ -35,11 +35,14 @@ const ORDER_POLL_MS = 8000;
 const STAFF_SESSION_KEY = "qb_staff_session";
 const savedStaffSession = (() => {
   try {
-    return JSON.parse(localStorage.getItem(STAFF_SESSION_KEY));
+    const s = JSON.parse(localStorage.getItem(STAFF_SESSION_KEY));
+    // Sessions saved before staff tokens existed can't call the API; treat them as signed out.
+    return s && s.token ? s : null;
   } catch {
     return null;
   }
 })();
+setStaffToken(savedStaffSession?.token ?? null);
 
 export default function App() {
   const [view, setView] = useState(savedStaffSession ? "staffDashboard" : "landing");
@@ -74,21 +77,34 @@ export default function App() {
       });
   }, [activeCanteenId]);
 
+  // Staff get their canteen's order list; customers only ever see the order
+  // they placed, fetched by id.
+  const loadStaffOrders = () =>
+    Api.getOrders().then((d) => setOrders(d)).catch((err) => {
+      if (err.status === 401) endStaffSession("Your session has expired. Please log in again.");
+    });
+  const loadTrackedOrder = () => {
+    if (!currentOrder) return Promise.resolve();
+    return Api.getOrderById(currentOrder).then((o) =>
+      setOrders((list) => [o, ...list.filter((x) => x.id !== o.id)]));
+  };
+
   useEffect(() => {
-    Api.getOrders().then((d) => setOrders(d)).catch((err) => console.error(err));
-  }, []);
+    if (staffAuthed) loadStaffOrders();
+  }, [staffAuthed]);
 
   // Keep orders live while someone is watching them: staff see new orders
   // arrive, customers see their status change, without reloading the page.
-  const watchingOrders = STAFF_VIEWS.includes(view) || view === "tracking" || view === "confirmation";
+  const watching = STAFF_VIEWS.includes(view) ? "staff" : (view === "tracking" || view === "confirmation") ? "customer" : null;
   useEffect(() => {
-    if (!watchingOrders) return;
+    if (!watching) return;
     const id = setInterval(() => {
       if (document.hidden) return;
-      Api.getOrders().then((d) => setOrders(d)).catch(() => { /* try again next tick */ });
+      if (watching === "staff") loadStaffOrders();
+      else loadTrackedOrder().catch(() => { /* try again next tick */ });
     }, ORDER_POLL_MS);
     return () => clearInterval(id);
-  }, [watchingOrders]);
+  }, [watching, currentOrder]);
 
   const go = (v, opts) => {
     setView(v);
@@ -116,7 +132,7 @@ export default function App() {
       return;
     }
     // The backend assigns the order id, looks up names/prices and works out
-    // the total itself — we only say what was ordered and where.
+    // the total itself - we only say what was ordered and where.
     const newOrder = {
       canteenId,
       tableNumber,
@@ -139,9 +155,10 @@ export default function App() {
     try {
       const res = await Api.staffLogin(staffId, password);
       if (res.success) {
+        setStaffToken(res.token);
         setStaffAuthed(true);
         setStaffCanteenId(res.canteenId);
-        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify({ canteenId: res.canteenId }));
+        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify({ canteenId: res.canteenId, token: res.token }));
         go("staffDashboard");
         push("Welcome back!", "success");
         return true;
@@ -151,12 +168,20 @@ export default function App() {
       return false;
     }
   };
-  const staffLogout = () => {
+  function endStaffSession(message) {
+    setStaffToken(null);
     setStaffAuthed(false);
     setStaffCanteenId(null);
+    setOrders([]);
     localStorage.removeItem(STAFF_SESSION_KEY);
     go("staffLogin");
-    push("Signed out.");
+    push(message);
+  }
+  const staffLogout = () => endStaffSession("Signed out.");
+  // Any staff action that comes back 401 means the token expired or is invalid.
+  const staffActionFailed = (err, fallback) => {
+    if (err.status === 401) endStaffSession("Your session has expired. Please log in again.");
+    else push(err.userMessage || fallback, "error");
   };
 
   const advanceOrderStatus = async (id) => {
@@ -168,14 +193,13 @@ export default function App() {
       setOrders((list) => list.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
       push(`Order marked as ${newStatus}.`, "success");
     } catch (err) {
-      push(err.userMessage || "Failed to update order status.", "error");
+      staffActionFailed(err, "Failed to update order status.");
     }
   };
 
   const refreshOrders = async () => {
     try {
-      const d = await Api.getOrders();
-      setOrders(d);
+      await loadTrackedOrder();
     } catch {
       push("Failed to refresh order status.", "error");
     }
@@ -188,8 +212,8 @@ export default function App() {
       setDeletingOrder(null);
       setStaffOrderDetail(null);
       push("Order removed.", "success");
-    } catch {
-      push("Failed to remove order.", "error");
+    } catch (err) {
+      staffActionFailed(err, "Failed to remove order.");
     }
   };
 
@@ -219,7 +243,8 @@ export default function App() {
             advance={advanceOrderStatus} actionLabel={null} openDetails={setStaffOrderDetail} onDelete={setDeletingOrder} />
         )}
         {view === "staffMenu" && (
-          <MenuManagement menuItems={menuItems} setMenuItems={setMenuItems} push={push} canteenId={staffCanteenId} />
+          <MenuManagement menuItems={menuItems} setMenuItems={setMenuItems} push={push} canteenId={staffCanteenId}
+            onActionFailed={staffActionFailed} />
         )}
         {view === "staffSearchSort" && <SearchSortDemo orders={staffOrders} />}
         {view === "staffDataStructures" && <DataStructuresDemo orders={staffOrders} menuItems={menuItems} push={push} />}

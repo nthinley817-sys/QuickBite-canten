@@ -3,11 +3,14 @@
 // needs to change — components only ever call these.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
+// Token from POST /staff/login. Staff-only endpoints reject requests without it.
+let staffToken = null;
+export const setStaffToken = (token) => { staffToken = token; };
+
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  const headers = { "Content-Type": "application/json" };
+  if (staffToken) headers.Authorization = `Bearer ${staffToken}`;
+  const res = await fetch(`${BASE_URL}${path}`, { headers, ...options });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     // The backend sends {"error": "..."} for validation failures; surface that
@@ -20,13 +23,16 @@ async function request(path, options = {}) {
     throw err;
   }
   if (res.status === 204) return null;
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export const Api = {
   getMenu: (canteenId) => request(canteenId ? `/menu?canteen=${encodeURIComponent(canteenId)}` : "/menu"),
+  // Staff only: returns the signed-in staff member's canteen orders.
   getOrders: () => request("/orders"),
-  getOrderById: (id, orders) => orders.find((o) => o.id === id),
+  // Public: customers track their own order by id.
+  getOrderById: (id) => request(`/orders/${encodeURIComponent(id)}`),
   createOrder: (order) => request("/orders", { method: "POST", body: JSON.stringify(order) }),
   updateOrderStatus: (id, status) =>
     request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),

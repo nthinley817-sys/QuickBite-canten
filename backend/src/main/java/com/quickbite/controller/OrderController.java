@@ -1,5 +1,7 @@
 package com.quickbite.controller;
 
+import com.quickbite.auth.StaffPrincipal;
+import com.quickbite.auth.StaffTokenService;
 import com.quickbite.dto.OrderDto;
 import com.quickbite.dto.UpdateStatusRequest;
 import com.quickbite.service.OrderService;
@@ -8,23 +10,33 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Matches src/services/api.js: Api.getOrders() -> GET /api/orders,
- * Api.createOrder(order) -> POST /api/orders,
- * Api.updateOrderStatus(id, status) -> PATCH /api/orders/{id}/status.
+ * Customers (no login) can place an order and look up a single order by id
+ * to track it. The order list, status changes and deletes are staff-only
+ * and limited to the staff member's own canteen.
  */
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final OrderService service;
+    private static final String AUTH = "Authorization";
 
-    public OrderController(OrderService service) {
+    private final OrderService service;
+    private final StaffTokenService tokens;
+
+    public OrderController(OrderService service, StaffTokenService tokens) {
         this.service = service;
+        this.tokens = tokens;
     }
 
     @GetMapping
-    public List<OrderDto> getOrders() {
-        return service.getAll();
+    public List<OrderDto> getOrders(@RequestHeader(value = AUTH, required = false) String auth) {
+        StaffPrincipal staff = tokens.requireStaff(auth);
+        return service.getForCanteen(staff.canteenId());
+    }
+
+    @GetMapping("/{id}")
+    public OrderDto getOrder(@PathVariable String id) {
+        return service.getById(id);
     }
 
     @PostMapping
@@ -33,12 +45,15 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public OrderDto updateStatus(@PathVariable String id, @RequestBody UpdateStatusRequest req) {
-        return service.updateStatus(id, req.status());
+    public OrderDto updateStatus(@PathVariable String id, @RequestBody UpdateStatusRequest req,
+                                 @RequestHeader(value = AUTH, required = false) String auth) {
+        StaffPrincipal staff = tokens.requireStaff(auth);
+        return service.updateStatus(id, req.status(), staff.canteenId());
     }
 
     @DeleteMapping("/{id}")
-    public void deleteOrder(@PathVariable String id) {
-        service.delete(id);
+    public void deleteOrder(@PathVariable String id, @RequestHeader(value = AUTH, required = false) String auth) {
+        StaffPrincipal staff = tokens.requireStaff(auth);
+        service.delete(id, staff.canteenId());
     }
 }

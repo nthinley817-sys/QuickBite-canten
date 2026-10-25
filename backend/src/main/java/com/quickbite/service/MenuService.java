@@ -1,6 +1,7 @@
 package com.quickbite.service;
 
 import com.quickbite.dto.MenuItemDto;
+import com.quickbite.exception.ForbiddenException;
 import com.quickbite.exception.NotFoundException;
 import com.quickbite.model.MenuItem;
 import com.quickbite.repository.CanteenRepository;
@@ -40,19 +41,19 @@ public class MenuService {
         return items.stream().map(this::toDto).toList();
     }
 
-    public MenuItemDto create(MenuItemDto dto) {
-        if (dto.canteenId() == null || !canteenRepository.existsById(dto.canteenId())) {
-            throw new IllegalArgumentException("Unknown canteen: " + dto.canteenId());
+    /** New items always go on the signed-in staff member's own canteen menu. */
+    public MenuItemDto create(MenuItemDto dto, String staffCanteenId) {
+        if (!canteenRepository.existsById(staffCanteenId)) {
+            throw new IllegalArgumentException("Unknown canteen: " + staffCanteenId);
         }
         validate(dto);
-        MenuItem item = new MenuItem(nextMenuItemId(dto.canteenId()), dto.name().trim(), dto.category(), dto.price(),
-                dto.desc(), dto.image(), dto.available(), dto.canteenId());
+        MenuItem item = new MenuItem(nextMenuItemId(staffCanteenId), dto.name().trim(), dto.category(), dto.price(),
+                dto.desc(), dto.image(), dto.available(), staffCanteenId);
         return toDto(repository.save(item));
     }
 
-    public MenuItemDto update(String id, MenuItemDto dto) {
-        MenuItem item = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Menu item " + id + " not found"));
+    public MenuItemDto update(String id, MenuItemDto dto, String staffCanteenId) {
+        MenuItem item = findForCanteen(id, staffCanteenId);
         validate(dto);
         item.setName(dto.name().trim());
         item.setCategory(dto.category());
@@ -63,11 +64,18 @@ public class MenuService {
         return toDto(repository.save(item));
     }
 
-    public void delete(String id) {
-        if (!repository.existsById(id)) {
-            throw new NotFoundException("Menu item " + id + " not found");
+    public void delete(String id, String staffCanteenId) {
+        repository.delete(findForCanteen(id, staffCanteenId));
+    }
+
+    /** Staff may only change items on their own canteen's menu. */
+    private MenuItem findForCanteen(String id, String staffCanteenId) {
+        MenuItem item = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Menu item " + id + " not found"));
+        if (!staffCanteenId.equals(item.getCanteenId())) {
+            throw new ForbiddenException("Menu item " + id + " belongs to another canteen.");
         }
-        repository.deleteById(id);
+        return item;
     }
 
     private void validate(MenuItemDto dto) {

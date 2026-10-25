@@ -2,6 +2,7 @@ package com.quickbite.service;
 
 import com.quickbite.dto.OrderDto;
 import com.quickbite.dto.OrderItemDto;
+import com.quickbite.exception.ForbiddenException;
 import com.quickbite.exception.NotFoundException;
 import com.quickbite.model.Canteen;
 import com.quickbite.model.MenuItem;
@@ -53,8 +54,12 @@ public class OrderService {
         jdbc.execute("CREATE SEQUENCE IF NOT EXISTS order_number_seq START WITH 1001");
     }
 
-    public List<OrderDto> getAll() {
-        return repository.findAllByOrderByCreatedAtDesc().stream().map(this::toDto).toList();
+    public List<OrderDto> getForCanteen(String canteenId) {
+        return repository.findByCanteenIdOrderByCreatedAtDesc(canteenId).stream().map(this::toDto).toList();
+    }
+
+    public OrderDto getById(String id) {
+        return toDto(find(id));
     }
 
     /** Creates a new order. The server decides everything the customer
@@ -109,21 +114,31 @@ public class OrderService {
         return toDto(repository.save(order));
     }
 
-    public OrderDto updateStatus(String id, String status) {
+    public OrderDto updateStatus(String id, String status, String staffCanteenId) {
         if (status == null || !STATUSES.contains(status)) {
             throw new IllegalArgumentException("Status must be one of " + STATUSES);
         }
-        Order order = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Order " + id + " not found"));
+        Order order = findForCanteen(id, staffCanteenId);
         order.setStatus(status);
         return toDto(repository.save(order));
     }
 
-    public void delete(String id) {
-        if (!repository.existsById(id)) {
-            throw new NotFoundException("Order " + id + " not found");
+    public void delete(String id, String staffCanteenId) {
+        repository.delete(findForCanteen(id, staffCanteenId));
+    }
+
+    private Order find(String id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Order " + id + " not found"));
+    }
+
+    /** Staff may only act on orders placed at their own canteen. */
+    private Order findForCanteen(String id, String staffCanteenId) {
+        Order order = find(id);
+        if (!staffCanteenId.equals(order.getCanteenId())) {
+            throw new ForbiddenException("Order " + id + " belongs to another canteen.");
         }
-        repository.deleteById(id);
+        return order;
     }
 
     /** Skips numbers already taken by seeded orders or by ids the old
