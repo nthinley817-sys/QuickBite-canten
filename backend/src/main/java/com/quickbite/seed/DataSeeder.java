@@ -9,6 +9,9 @@ import com.quickbite.repository.CanteenRepository;
 import com.quickbite.repository.MenuItemRepository;
 import com.quickbite.repository.OrderRepository;
 import com.quickbite.repository.StaffRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -27,6 +30,7 @@ import java.util.List;
 @Component
 public class DataSeeder implements CommandLineRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
 
     private final MenuItemRepository menuRepo;
@@ -34,12 +38,25 @@ public class DataSeeder implements CommandLineRunner {
     private final OrderRepository orderRepo;
     private final StaffRepository staffRepo;
 
+    private final String upperStaffId;
+    private final String upperStaffPassword;
+    private final String lowerStaffId;
+    private final String lowerStaffPassword;
+
     public DataSeeder(MenuItemRepository menuRepo, CanteenRepository canteenRepo,
-                       OrderRepository orderRepo, StaffRepository staffRepo) {
+                       OrderRepository orderRepo, StaffRepository staffRepo,
+                       @Value("${UPPER_STAFF_ID:}") String upperStaffId,
+                       @Value("${UPPER_STAFF_PASSWORD:}") String upperStaffPassword,
+                       @Value("${LOWER_STAFF_ID:}") String lowerStaffId,
+                       @Value("${LOWER_STAFF_PASSWORD:}") String lowerStaffPassword) {
         this.menuRepo = menuRepo;
         this.canteenRepo = canteenRepo;
         this.orderRepo = orderRepo;
         this.staffRepo = staffRepo;
+        this.upperStaffId = upperStaffId;
+        this.upperStaffPassword = upperStaffPassword;
+        this.lowerStaffId = lowerStaffId;
+        this.lowerStaffPassword = lowerStaffPassword;
     }
 
     @Override
@@ -48,7 +65,37 @@ public class DataSeeder implements CommandLineRunner {
         seedMenu();
         seedOrders();
         seedStaff();
+        applyConfiguredStaffLogin("upper", upperStaffId, upperStaffPassword);
+        applyConfiguredStaffLogin("lower", lowerStaffId, lowerStaffPassword);
         backfillOrderCanteenIds();
+    }
+
+    /**
+     * Real staff logins come from environment variables (e.g. UPPER_STAFF_ID /
+     * UPPER_STAFF_PASSWORD on Render), never from source code. When both are
+     * set, that canteen's account is updated to match on every startup, so the
+     * seeded demo password stops working. Unset means "keep the demo login",
+     * which is what local development uses.
+     */
+    private void applyConfiguredStaffLogin(String canteenId, String staffId, String password) {
+        boolean hasId = staffId != null && !staffId.isBlank();
+        boolean hasPassword = password != null && !password.isBlank();
+        if (!hasId && !hasPassword) return;
+        if (!hasId || !hasPassword) {
+            log.warn("Staff login for canteen '{}' needs both an ID and a password; leaving it unchanged.", canteenId);
+            return;
+        }
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        List<Staff> accounts = staffRepo.findByCanteenId(canteenId);
+        Staff account = accounts.isEmpty() ? new Staff(staffId.trim(), encoder.encode(password), canteenId) : accounts.get(0);
+        // One login per canteen: drop any older accounts (e.g. the demo one).
+        accounts.stream().skip(1).forEach(staffRepo::delete);
+        account.setStaffId(staffId.trim());
+        if (!encoder.matches(password, account.getPasswordHash())) {
+            account.setPasswordHash(encoder.encode(password));
+        }
+        staffRepo.save(account);
+        log.info("Staff login for canteen '{}' set from environment.", canteenId);
     }
 
     /** Fixes orders saved before canteenId existed (null canteenId), so

@@ -49,7 +49,6 @@ export default function StaffLogin({ go, onLogin }) {
               <input
                 id="staffId"
                 type="text"
-                placeholder="e.g. staff"
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
                 autoFocus
@@ -95,10 +94,6 @@ export default function StaffLogin({ go, onLogin }) {
               <Icon name="lock" size={16} /> {submitting ? "Signing in…" : "Sign In"}
             </button>
           </form>
-
-          <div className="info-note" style={{ marginTop: 20 }}>
-            <strong>Demo access</strong> — Upper Canteen: <strong>upper_staff</strong> · Lower Canteen: <strong>lower_staff</strong> · Password: <strong>staff123</strong>
-          </div>
         </div>
 
         <button
