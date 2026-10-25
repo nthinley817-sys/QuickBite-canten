@@ -1,5 +1,5 @@
 import PriorityBadge from "../common/PriorityBadge.jsx";
-import { money } from "../../utils/format.js";
+import { money, orderDateTime } from "../../utils/format.js";
 
 export default function OrderCardMini({ order, onClick }) {
   return (
@@ -11,7 +11,7 @@ export default function OrderCardMini({ order, onClick }) {
       <div className="order-items">{order.items.map((i) => `${i.qty} × ${i.name}`).join(", ")}</div>
       <div className="order-card-bottom">
         <span className="order-total">{money(order.total)}</span>
-        <span className="order-time">{order.time}</span>
+        <span className="order-time">{orderDateTime(order)}</span>
       </div>
     </div>
   );

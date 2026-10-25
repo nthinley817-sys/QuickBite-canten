@@ -12,6 +12,8 @@ public record OrderDto(
         String status,
         String priority,
         String time,
-        int tableNumber
+        int tableNumber,
+        /** When the order was placed, as an ISO-8601 instant (e.g. 2026-10-25T19:03:07Z), so clients can show the date too. */
+        String placedAt
 ) {
 }

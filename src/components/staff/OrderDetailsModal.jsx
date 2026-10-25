@@ -1,7 +1,7 @@
 import Modal from "../common/Modal.jsx";
 import StatusBadge from "../common/StatusBadge.jsx";
 import PriorityBadge from "../common/PriorityBadge.jsx";
-import { money } from "../../utils/format.js";
+import { money, orderDate, orderTime } from "../../utils/format.js";
 
 export default function OrderDetailsModal({ order, onClose, advance, onDelete }) {
   if (!order) return null;
@@ -17,7 +17,8 @@ export default function OrderDetailsModal({ order, onClose, advance, onDelete })
           <StatusBadge status={order.status} />
         </div>
         <div style={{ margin: "18px 0" }}>
-          <div className="detail-row"><span className="lbl">Order Time</span><span>{order.time}</span></div>
+          <div className="detail-row"><span className="lbl">Order No.</span><span>{order.id}</span></div>
+          <div className="detail-row"><span className="lbl">Placed</span><span>{orderDate(order) ? `${orderDate(order)}, ${orderTime(order)}` : orderTime(order)}</span></div>
           <div className="detail-row"><span className="lbl">Priority</span><PriorityBadge priority={order.priority} /></div>
           {order.items.map((it, i) => (
             <div className="detail-row" key={i}><span className="lbl">{it.qty} × {it.name}</span></div>

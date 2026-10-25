@@ -271,7 +271,8 @@ export default function App() {
         {view === "cart" && (
           <>
             <CartPage cart={cart} menuItems={menuItems} updateQty={updateQty} removeItem={removeItem} go={go} placeOrder={placeOrder}
-              tableNumber={tableNumber} setTableNumber={setTableNumber} />
+              tableNumber={tableNumber} setTableNumber={setTableNumber}
+              canteenName={CANTEENS.find((c) => c.id === canteenId)?.name} />
             <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}

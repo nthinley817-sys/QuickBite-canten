@@ -1,11 +1,11 @@
 import { useState, useMemo, Fragment } from "react";
 import Icon from "../../components/icons/Icon.jsx";
 import OrderCardMini from "../../components/staff/OrderCardMini.jsx";
-import { simpleHash } from "../../utils/format.js";
+import { simpleHash, byPlacedAt } from "../../utils/format.js";
 
 export default function DataStructuresDemo({ orders, menuItems, push }) {
   const [tab, setTab] = useState("queue");
-  const pendingQueue = orders.filter((o) => o.status === "Pending").sort((a, b) => a.time.localeCompare(b.time));
+  const pendingQueue = orders.filter((o) => o.status === "Pending").sort(byPlacedAt);
 
   const buckets = (arr, keyFn) => {
     const b = Array.from({ length: 10 }, () => []);

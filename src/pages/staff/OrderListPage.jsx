@@ -1,7 +1,7 @@
 import EmptyState from "../../components/common/EmptyState.jsx";
 import PriorityBadge from "../../components/common/PriorityBadge.jsx";
 import Icon from "../../components/icons/Icon.jsx";
-import { money } from "../../utils/format.js";
+import { money, orderDateTime } from "../../utils/format.js";
 
 export default function OrderListPage({ title, subtitle, orders, status, advance, actionLabel, openDetails, onDelete }) {
   const list = orders.filter((o) => o.status === status);
@@ -24,7 +24,7 @@ export default function OrderListPage({ title, subtitle, orders, status, advance
               <div className="order-items">{o.items.map((i) => `${i.qty} × ${i.name}`).join(", ")}</div>
               <div className="order-card-bottom">
                 <span className="order-total">{money(o.total)}</span>
-                <span className="order-time">{status === "Completed" ? `Completed: ${o.time}` : o.time}</span>
+                <span className="order-time">{status === "Completed" ? `Placed: ${orderDateTime(o)}` : orderDateTime(o)}</span>
               </div>
               {actionLabel && (
                 <button

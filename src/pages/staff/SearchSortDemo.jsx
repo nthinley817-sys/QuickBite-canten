@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import EmptyState from "../../components/common/EmptyState.jsx";
 import StatusBadge from "../../components/common/StatusBadge.jsx";
 import OrderCardMini from "../../components/staff/OrderCardMini.jsx";
+import { byPlacedAt } from "../../utils/format.js";
 
 export default function SearchSortDemo({ orders }) {
   const [q, setQ] = useState("");
@@ -21,7 +22,7 @@ export default function SearchSortDemo({ orders }) {
     const arr = [...orders];
     const cmp = {
       "Order Number": (a, b) => a.id.localeCompare(b.id),
-      Time: (a, b) => a.time.localeCompare(b.time),
+      Time: byPlacedAt,
       Total: (a, b) => a.total - b.total,
       Priority: (a, b) => (a.priority === "High" ? 0 : 1) - (b.priority === "High" ? 0 : 1),
       Status: (a, b) => a.status.localeCompare(b.status),

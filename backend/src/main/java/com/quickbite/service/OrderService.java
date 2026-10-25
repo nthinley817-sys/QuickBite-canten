@@ -155,6 +155,7 @@ public class OrderService {
         List<OrderItemDto> items = o.getItems().stream()
                 .map(i -> new OrderItemDto(i.getMenuItemId(), i.getName(), i.getQty()))
                 .toList();
-        return new OrderDto(o.getId(), o.getCanteen(), o.getCanteenId(), items, o.getTotal(), o.getStatus(), o.getPriority(), o.getTime(), o.getTableNumber());
+        return new OrderDto(o.getId(), o.getCanteen(), o.getCanteenId(), items, o.getTotal(), o.getStatus(), o.getPriority(), o.getTime(), o.getTableNumber(),
+                o.getCreatedAt() == null ? null : o.getCreatedAt().toString());
     }
 }

@@ -1,13 +1,31 @@
+import { useState } from "react";
 import SafeImg from "../../components/common/SafeImg.jsx";
+import Modal from "../../components/common/Modal.jsx";
 import EmptyState from "../../components/common/EmptyState.jsx";
 import Icon from "../../components/icons/Icon.jsx";
 import { money } from "../../utils/format.js";
 
 const TABLE_NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
 
-export default function CartPage({ cart, menuItems, updateQty, removeItem, go, placeOrder, tableNumber, setTableNumber }) {
+export default function CartPage({ cart, menuItems, updateQty, removeItem, go, placeOrder, tableNumber, setTableNumber, canteenName }) {
+  const [confirming, setConfirming] = useState(false);
+  const [placing, setPlacing] = useState(false);
   const items = cart.map((c) => ({ ...c, menuItem: menuItems.find((m) => m.id === c.id) })).filter((c) => c.menuItem);
   const subtotal = items.reduce((s, i) => s + i.menuItem.price * i.qty, 0);
+
+  const itemCount = items.reduce((s, i) => s + i.qty, 0);
+
+  // Placing an order goes through a confirmation step, and the button locks
+  // while the request is in flight so a double tap can't send it twice.
+  const confirmOrder = async () => {
+    setPlacing(true);
+    try {
+      await placeOrder();
+    } finally {
+      setPlacing(false);
+      setConfirming(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -23,7 +41,7 @@ export default function CartPage({ cart, menuItems, updateQty, removeItem, go, p
   }
 
   return (
-    <div className="wrap section-tight" style={{ paddingBottom: 120 }}>
+    <div className="wrap section-tight cart-page">
       <h1 style={{ fontSize: 30, marginBottom: 26 }}>Your Cart</h1>
       <div className="cart-layout">
         <div>
@@ -52,7 +70,7 @@ export default function CartPage({ cart, menuItems, updateQty, removeItem, go, p
         <div>
           <div className="summary-card desktop-only" style={{ display: "block" }}>
             <h3 style={{ fontSize: 18, marginBottom: 16 }}>Order Summary</h3>
-            <div className="summary-row"><span>Items ({items.reduce((s, i) => s + i.qty, 0)})</span><span>{money(subtotal)}</span></div>
+            <div className="summary-row"><span>Items ({itemCount})</span><span>{money(subtotal)}</span></div>
             <div className="summary-row"><span>Subtotal</span><span>{money(subtotal)}</span></div>
             <div className="summary-row total"><span>Total</span><span>{money(subtotal)}</span></div>
             <div className="field" style={{ marginTop: 16, marginBottom: 0 }}>
@@ -62,7 +80,7 @@ export default function CartPage({ cart, menuItems, updateQty, removeItem, go, p
                 {TABLE_NUMBERS.map((n) => <option key={n} value={n}>Table {n}</option>)}
               </select>
             </div>
-            <button className="btn btn-primary btn-block" style={{ marginTop: 16 }} disabled={!tableNumber} onClick={placeOrder}>Place Order</button>
+            <button className="btn btn-primary btn-block" style={{ marginTop: 16 }} disabled={!tableNumber} onClick={() => setConfirming(true)}>Place Order</button>
           </div>
         </div>
       </div>
@@ -80,10 +98,35 @@ export default function CartPage({ cart, menuItems, updateQty, removeItem, go, p
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Total</div><div style={{ fontWeight: 800, fontSize: 19 }}>{money(subtotal)}</div></div>
-            <button className="btn btn-primary" style={{ flex: 1 }} disabled={!tableNumber} onClick={placeOrder}>Place Order</button>
+            <button className="btn btn-primary" style={{ flex: 1 }} disabled={!tableNumber} onClick={() => setConfirming(true)}>Place Order</button>
           </div>
         </div>
       </div>
+
+      {confirming && (
+        <Modal onClose={() => !placing && setConfirming(false)} maxWidth={440}>
+          <div style={{ padding: 28 }}>
+            <h3 style={{ fontSize: 20, marginBottom: 6 }}>Place this order?</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 18 }}>
+              Please check your table and items. Once placed, the kitchen starts preparing it.
+            </p>
+            <div className="confirm-summary">
+              <div className="detail-row"><span className="lbl">Canteen</span><span>{canteenName}</span></div>
+              <div className="detail-row"><span className="lbl">Table</span><span style={{ fontWeight: 800 }}>Table {tableNumber}</span></div>
+              {items.map((i) => (
+                <div className="detail-row" key={i.id}><span className="lbl">{i.qty} × {i.menuItem.name}</span><span>{money(i.menuItem.price * i.qty)}</span></div>
+              ))}
+              <div className="detail-row"><span style={{ fontWeight: 800 }}>Total</span><span style={{ fontWeight: 800 }}>{money(subtotal)}</span></div>
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 22 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} disabled={placing} onClick={() => setConfirming(false)}>Go Back</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} disabled={placing} onClick={confirmOrder}>
+                {placing ? "Placing…" : "Yes, Place Order"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
