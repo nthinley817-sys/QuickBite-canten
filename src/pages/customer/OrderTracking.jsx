@@ -3,7 +3,7 @@ import EmptyState from "../../components/common/EmptyState.jsx";
 import Icon from "../../components/icons/Icon.jsx";
 import { money } from "../../utils/format.js";
 
-export default function OrderTracking({ order, onRefresh, go }) {
+export default function OrderTracking({ order, onRefresh, go, notifyPermission, onEnableNotify }) {
   if (!order) {
     return (
       <div className="wrap section-tight">
@@ -55,7 +55,17 @@ export default function OrderTracking({ order, onRefresh, go }) {
             <span>Total</span><span>{money(order.total)}</span>
           </div>
         </div>
-        <button className="btn btn-outline btn-block" style={{ marginTop: 20 }} disabled={order.status === "Completed"} onClick={onRefresh}>
+        {order.status !== "Completed" && (
+          <p className="notify-on" style={{ marginTop: 18 }}>
+            <Icon name="bell" size={14} /> This page updates on its own. We'll play a sound when your order moves along.
+          </p>
+        )}
+        {order.status !== "Completed" && notifyPermission === "default" && (
+          <button className="btn btn-outline btn-block notify-btn" style={{ marginTop: 12 }} onClick={onEnableNotify}>
+            <Icon name="bell" size={16} /> Notify me on this phone when it's ready
+          </button>
+        )}
+        <button className="btn btn-outline btn-block" style={{ marginTop: 12 }} disabled={order.status === "Completed"} onClick={onRefresh}>
           <Icon name="refresh" size={16} /> Refresh Status
         </button>
       </div>

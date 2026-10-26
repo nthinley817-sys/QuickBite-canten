@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Api, setStaffToken } from "./services/api.js";
 import { CANTEENS } from "./data/canteens.js";
 import { useToasts } from "./hooks/useToasts.js";
-import { useOrderAlerts } from "./hooks/useOrderAlerts.js";
+import { useOrderAlerts, useOrderStatusAlerts, unlockAudio } from "./hooks/useOrderAlerts.js";
 import { nextStatus } from "./utils/format.js";
 
 import Navbar from "./components/layout/Navbar.jsx";
@@ -98,14 +98,18 @@ export default function App() {
 
   // Keep orders live while someone is watching them: staff see new orders
   // arrive, customers see their status change, without reloading the page.
-  const watching = STAFF_VIEWS.includes(view) ? "staff" : (view === "tracking" || view === "confirmation") ? "customer" : null;
+  // Customers keep getting updates on any page until their order is done,
+  // so they can be alerted the moment staff start or finish it.
+  const trackedDone = orders.find((o) => o.id === currentOrder)?.status === "Completed";
+  const watching = STAFF_VIEWS.includes(view) ? "staff"
+    : view !== "staffLogin" && currentOrder && !trackedDone ? "customer" : null;
   useEffect(() => {
     if (!watching) return;
     const id = setInterval(() => {
-      // Staff keep polling in a background tab so new-order alerts still
-      // arrive; customers only need updates while they're looking.
+      // Both keep polling in a background tab so alerts still arrive
+      // (browsers slow this down, but don't stop it while the tab is open).
       if (watching === "staff") loadStaffOrders();
-      else if (!document.hidden) loadTrackedOrder().catch(() => { /* try again next tick */ });
+      else loadTrackedOrder().catch(() => { /* try again next tick */ });
     }, ORDER_POLL_MS);
     return () => clearInterval(id);
   }, [watching, currentOrder]);
@@ -131,6 +135,9 @@ export default function App() {
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
 
   const placeOrder = async () => {
+    // This runs from the "Yes, Place Order" tap, which lets the browser play
+    // the status chime later without another tap.
+    unlockAudio();
     if (!tableNumber) {
       push("Please select your table number.", "error");
       return;
@@ -223,6 +230,7 @@ export default function App() {
   };
 
   const trackedOrder = orders.find((o) => o.id === currentOrder);
+  const statusAlerts = useOrderStatusAlerts(STAFF_VIEWS.includes(view) ? null : trackedOrder);
   const isStaff = STAFF_VIEWS.includes(view);
   const isStaffLogin = view === "staffLogin";
   const staffOrders = orders.filter((o) => o.canteenId === staffCanteenId);
@@ -291,13 +299,13 @@ export default function App() {
         )}
         {view === "confirmation" && (
           <>
-            <OrderConfirmation order={trackedOrder} go={go} />
+            <OrderConfirmation order={trackedOrder} go={go} notifyPermission={statusAlerts.permission} onEnableNotify={statusAlerts.requestNotify} />
             <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
         {view === "tracking" && (
           <>
-            <OrderTracking order={trackedOrder} onRefresh={refreshOrders} go={go} />
+            <OrderTracking order={trackedOrder} onRefresh={refreshOrders} go={go} notifyPermission={statusAlerts.permission} onEnableNotify={statusAlerts.requestNotify} />
             <Footer go={go} staffAuthed={staffAuthed} />
           </>
         )}
@@ -333,6 +341,20 @@ export default function App() {
         </Modal>
       )}
       {isStaff && <NewOrderAlerts cards={alerts.cards} onOpen={(o) => { alerts.dismiss(o.key); openAlertedOrder(o.order); }} onDismiss={alerts.dismiss} />}
+      {!isStaff && statusAlerts.notice && (
+        <div className="order-alerts" aria-live="assertive">
+          <div className={`order-alert ${statusAlerts.notice.status === "Completed" ? "ready" : ""}`} role="alert">
+            <button className="order-alert-body" onClick={() => { statusAlerts.dismiss(); go("tracking"); }}>
+              <span className="order-alert-icon"><Icon name={statusAlerts.notice.status === "Completed" ? "checkCircle" : "bell"} size={18} /></span>
+              <span className="order-alert-text">
+                <span className="order-alert-title">{statusAlerts.notice.title}</span>
+                <span className="order-alert-meta">{statusAlerts.notice.body}</span>
+              </span>
+            </button>
+            <button className="order-alert-close" onClick={statusAlerts.dismiss} aria-label="Dismiss"><Icon name="close" size={14} /></button>
+          </div>
+        </div>
+      )}
       <ToastHost toasts={toasts} />
     </div>
   );

@@ -147,3 +147,58 @@ export function useOrderAlerts(orders, active, onOpenOrder) {
   const dismiss = useCallback((key) => setCards((c) => c.filter((x) => x.key !== key)), []);
   return { enabled, toggle, cards, dismiss, permission };
 }
+
+// ---------------------------------------------------------------------------
+// Customer side: tell the customer, on their own phone, when staff move their
+// order along. Plays the chime, vibrates (Android), shows a card on screen and,
+// if they allowed it and are looking at another tab, a system notification.
+
+const STATUS_NOTICES = {
+  Processing: { title: "Your food is being prepared", body: "The kitchen has started on your order." },
+  Completed: { title: "Your order is ready!", body: "Please collect it at the counter." },
+};
+
+// Call from a tap (e.g. "Place Order") so the browser lets us play sound later.
+export function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch { /* no audio available */ }
+}
+
+export function useOrderStatusAlerts(order) {
+  const [notice, setNotice] = useState(null);
+  const [permission, setPermission] = useState(() => (notificationsSupported() ? Notification.permission : "unsupported"));
+  const last = useRef(null);
+
+  useEffect(() => {
+    if (!order) { last.current = null; return; }
+    const prev = last.current;
+    last.current = { id: order.id, status: order.status };
+    // Only react to a change we saw happen, not to the first load.
+    if (!prev || prev.id !== order.id || prev.status === order.status) return;
+    const info = STATUS_NOTICES[order.status];
+    if (!info) return;
+
+    chime();
+    try { navigator.vibrate?.([250, 120, 250]); } catch { /* not supported */ }
+    const key = `${order.id}-${order.status}`;
+    setNotice({ key, title: info.title, body: `Table ${order.tableNumber} · ${info.body}`, status: order.status });
+    setTimeout(() => setNotice((n) => (n && n.key === key ? null : n)), 12000);
+
+    if (document.hidden && notificationsSupported() && Notification.permission === "granted") {
+      try {
+        const n = new Notification(info.title, { body: `Table ${order.tableNumber} · ${info.body}`, icon: "/logoshort.png", tag: key });
+        n.onclick = () => { window.focus(); n.close(); };
+      } catch { /* some mobile browsers only allow notifications from an installed app */ }
+    }
+  }, [order?.id, order?.status]);
+
+  const requestNotify = useCallback(() => {
+    unlockAudio();
+    if (!notificationsSupported() || Notification.permission !== "default") return;
+    Notification.requestPermission().then(setPermission).catch(() => { /* ignore */ });
+  }, []);
+
+  return { notice, dismiss: () => setNotice(null), permission, requestNotify };
+}

@@ -2,7 +2,7 @@ import EmptyState from "../../components/common/EmptyState.jsx";
 import Icon from "../../components/icons/Icon.jsx";
 import { money, orderDate, orderTime } from "../../utils/format.js";
 
-export default function OrderConfirmation({ order, go }) {
+export default function OrderConfirmation({ order, go, notifyPermission, onEnableNotify }) {
   if (!order) {
     return (
       <div className="wrap section-tight">
@@ -47,6 +47,14 @@ export default function OrderConfirmation({ order, go }) {
           <span><strong>Take a screenshot of this page.</strong> Show it at the counter when you pay, so staff can find your order quickly.</span>
         </div>
 
+        {notifyPermission === "default" && (
+          <button className="btn btn-outline btn-block notify-btn" onClick={onEnableNotify}>
+            <Icon name="bell" size={16} /> Notify me on this phone when it's ready
+          </button>
+        )}
+        {notifyPermission === "granted" && (
+          <p className="notify-on"><Icon name="check" size={14} /> You'll get a notification when your order is ready.</p>
+        )}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => go("tracking")}>Track My Order</button>
           <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => go("canteens")}>Back to Menu</button>

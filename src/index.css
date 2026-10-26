@@ -546,3 +546,6 @@ table.data-table{width:100%;border-collapse:collapse;}
 @media(max-width:640px){.order-alerts{top:68px;right:16px;}}
 @media (prefers-reduced-motion: reduce){.alerts-toggle,.order-alert{animation:none;}}
 .staff-topbar .brand{color:var(--text);}
+.notify-btn{margin-bottom:12px;gap:8px;}
+.notify-on{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--text-secondary);margin:0 0 14px;text-align:center;}
+.order-alert.ready .order-alert-icon{background:var(--success-bg);color:var(--success);}
