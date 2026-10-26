@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import EmptyState from "../../components/common/EmptyState.jsx";
 import StatusBadge from "../../components/common/StatusBadge.jsx";
 import OrderCardMini from "../../components/staff/OrderCardMini.jsx";
-import { byPlacedAt } from "../../utils/format.js";
+import { Api } from "../../services/api.js";
 
 export default function SearchSortDemo({ orders }) {
   const [q, setQ] = useState("");
@@ -11,33 +11,41 @@ export default function SearchSortDemo({ orders }) {
   const [sortBy, setSortBy] = useState("Time");
   const [dir, setDir] = useState("Descending");
 
-  const doSearch = () => {
-    const clean = q.trim().toUpperCase().replace(/^QB-?/, "");
-    const result = orders.find((o) => o.id.replace("QB-", "") === clean || o.id.toUpperCase() === q.trim().toUpperCase());
-    setFound(result || null);
+  const [searchInfo, setSearchInfo] = useState(null);
+  const [sortInfo, setSortInfo] = useState(null);
+  const [sorted, setSorted] = useState([]);
+
+  // Search runs in Java: merge sort by order number, then binary search.
+  const doSearch = async () => {
+    if (!q.trim()) return;
+    try {
+      const r = await Api.dsaSearch(q.trim());
+      setFound(r.found ? r.order : null);
+      setSearchInfo(r);
+    } catch {
+      setFound(null);
+      setSearchInfo(null);
+    }
     setSearched(true);
   };
 
-  const sorted = useMemo(() => {
-    const arr = [...orders];
-    const cmp = {
-      "Order Number": (a, b) => a.id.localeCompare(b.id),
-      Time: byPlacedAt,
-      Total: (a, b) => a.total - b.total,
-      Priority: (a, b) => (a.priority === "High" ? 0 : 1) - (b.priority === "High" ? 0 : 1),
-      Status: (a, b) => a.status.localeCompare(b.status),
-    };
-    arr.sort(cmp[sortBy]);
-    if (dir === "Descending") arr.reverse();
-    return arr;
-  }, [orders, sortBy, dir]);
+  // Sorting runs in Java (merge sort); re-sort when the live orders change.
+  const ordersKey = orders.map((o) => `${o.id}:${o.status}`).join("|");
+  useEffect(() => {
+    let cancelled = false;
+    Api.dsaSorted(sortBy, dir)
+      .then((r) => { if (!cancelled) { setSorted(r.orders); setSortInfo(r); } })
+      .catch(() => { if (!cancelled) setSortInfo(null); });
+    return () => { cancelled = true; };
+  }, [sortBy, dir, ordersKey]);
 
   return (
     <div>
-      <div className="dash-header"><div><h1 style={{ fontSize: 26 }}>Search & Sort</h1><p style={{ color: "var(--text-secondary)", marginTop: 4 }}>Frontend demonstration over today's mock order list.</p></div></div>
+      <div className="dash-header"><div><h1 style={{ fontSize: 26 }}>Search & Sort</h1><p style={{ color: "var(--text-secondary)", marginTop: 4 }}>Search and sort this canteen's orders with QuickBite's Java algorithms.</p></div></div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 22, marginBottom: 28 }}>
-        <h4 style={{ fontSize: 15, marginBottom: 14 }}>Search Order</h4>
+        <h4 style={{ fontSize: 15, marginBottom: 6 }}>Search Order</h4>
+        <div className="java-source"><span className="java-tag">Java</span><code>backend/src/main/java/com/quickbite/dsa/BinarySearch.java</code><span className="java-ops">O(log n)</span></div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input
             style={{ flex: 1, minWidth: 200, padding: "12px 14px", borderRadius: 11, border: "1.5px solid var(--border)" }}
@@ -51,7 +59,9 @@ export default function SearchSortDemo({ orders }) {
         {searched && (
           found ? (
             <div className="order-card" style={{ marginTop: 16, cursor: "default" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--success)", marginBottom: 8 }}>✓ Order found</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--success)", marginBottom: 8 }}>
+                ✓ Order found{searchInfo && ` · binary search took ${searchInfo.steps} step${searchInfo.steps === 1 ? "" : "s"} over ${searchInfo.searchedCount} orders`}
+              </div>
               <div className="order-card-top">
                 <div><div className="order-id">{found.id}</div><div className="order-canteen">{found.canteen}</div></div>
                 <StatusBadge status={found.status} />
@@ -60,14 +70,19 @@ export default function SearchSortDemo({ orders }) {
             </div>
           ) : (
             <div style={{ marginTop: 16 }}>
-              <EmptyState icon="search" title="No matching order" text={`We couldn't find an order matching "${q}".`} />
+              <EmptyState icon="search" title="No matching order"
+                text={`We couldn't find an order matching "${q}".${searchInfo ? ` Binary search checked ${searchInfo.steps} of ${searchInfo.searchedCount} orders.` : ""}`} />
             </div>
           )
         )}
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 22 }}>
-        <h4 style={{ fontSize: 15, marginBottom: 14 }}>Sort Orders</h4>
+        <h4 style={{ fontSize: 15, marginBottom: 6 }}>Sort Orders</h4>
+        <div className="java-source">
+          <span className="java-tag">Java</span><code>backend/src/main/java/com/quickbite/dsa/MergeSort.java</code>
+          <span className="java-ops">O(n log n), stable{sortInfo && ` · ${sortInfo.comparisons} comparisons for ${sortInfo.orders.length} orders`}</span>
+        </div>
         <div className="field-row" style={{ marginBottom: 20 }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Sort by</label>

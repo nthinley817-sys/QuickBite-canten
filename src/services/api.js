@@ -40,6 +40,13 @@ export const Api = {
   createMenuItem: (item) => request("/menu", { method: "POST", body: JSON.stringify(item) }),
   updateMenuItem: (item) => request(`/menu/${item.id}`, { method: "PUT", body: JSON.stringify(item) }),
   deleteMenuItem: (id) => request(`/menu/${id}`, { method: "DELETE" }),
+  // Staff only: QuickBite's Java data structures (backend com.quickbite.dsa)
+  // run over the signed-in canteen's live orders and menu.
+  dsaQueue: () => request("/dsa/queue"),
+  dsaPriority: () => request("/dsa/priority"),
+  dsaHash: (key) => request(key ? `/dsa/hash?key=${encodeURIComponent(key)}` : "/dsa/hash"),
+  dsaSorted: (by, dir) => request(`/dsa/orders/sorted?by=${encodeURIComponent(by)}&dir=${encodeURIComponent(dir)}`),
+  dsaSearch: (q) => request(`/dsa/orders/search?q=${encodeURIComponent(q)}`),
   staffLogin: (staffId, password) =>
     request("/staff/login", { method: "POST", body: JSON.stringify({ staffId, password }) }),
 };

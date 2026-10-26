@@ -549,3 +549,9 @@ table.data-table{width:100%;border-collapse:collapse;}
 .notify-btn{margin-bottom:12px;gap:8px;}
 .notify-on{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--text-secondary);margin:0 0 14px;text-align:center;}
 .order-alert.ready .order-alert-icon{background:var(--success-bg);color:var(--success);}
+
+/* "Computed in Java" source line on the staff DSA pages */
+.java-source{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 16px;font-size:12.5px;color:var(--text-secondary);}
+.java-source code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--background);border:1px solid var(--border);border-radius:6px;padding:2px 7px;word-break:break-all;}
+.java-tag{font-weight:800;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#B0601C;border-radius:6px;padding:2px 7px;}
+.bucket.hit{border-color:var(--primary);background:#FFF8EB;}

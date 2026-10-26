@@ -151,7 +151,7 @@ public class OrderService {
         return id;
     }
 
-    private OrderDto toDto(Order o) {
+    public OrderDto toDto(Order o) {
         List<OrderItemDto> items = o.getItems().stream()
                 .map(i -> new OrderItemDto(i.getMenuItemId(), i.getName(), i.getQty()))
                 .toList();
