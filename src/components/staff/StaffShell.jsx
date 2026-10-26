@@ -12,7 +12,7 @@ export const STAFF_NAV = [
   { id: "staffDataStructures", label: "Data Structures", icon: "layers" },
 ];
 
-export default function StaffShell({ view, go, children, orders, onLogout, canteenName }) {
+export default function StaffShell({ view, go, children, orders, onLogout, canteenName, alertsOn, onToggleAlerts, notifyPermission }) {
   const [drawer, setDrawer] = useState(false);
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   return (
@@ -41,6 +41,17 @@ export default function StaffShell({ view, go, children, orders, onLogout, cante
             <button className="hamburger mobile-only" style={{ display: "none" }} onClick={() => setDrawer(true)} aria-label="Open menu"><Icon name="menu" size={19} /></button>
             <div className="brand mobile-only" style={{ display: "none", fontSize: 16 }}><Logomark size={30} /> QuickBite Staff</div>
             <div className="desktop-only" style={{ fontWeight: 700, fontSize: 15, color: "var(--text-secondary)" }}>Staff Console</div>
+            <button
+              className={`alerts-toggle ${alertsOn ? "on" : ""}`}
+              onClick={onToggleAlerts}
+              aria-pressed={alertsOn}
+              title={alertsOn && notifyPermission === "denied"
+                ? "Sound is on. Desktop notifications are blocked in your browser settings."
+                : alertsOn ? "Turn off new-order alerts" : "Get a sound and notification for every new order"}
+            >
+              <Icon name={alertsOn ? "bell" : "bellOff"} size={17} />
+              <span>{alertsOn ? "Alerts on" : "Turn on order alerts"}</span>
+            </button>
           </div>
         </div>
         <div className="staff-content wrap" style={{ padding: "32px 24px 60px" }}>

@@ -523,3 +523,26 @@ table.data-table{width:100%;border-collapse:collapse;}
 .staff-drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
 .staff-drawer{position:fixed;top:0;left:0;bottom:0;width:260px;background:var(--dark);z-index:95;padding:22px 16px;animation:slideIn .2s ease;}
 @keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+
+/* New-order alerts (staff) */
+.alerts-toggle{margin-left:auto;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;
+  border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;
+  animation:alertsNudge 2.4s ease-in-out infinite;}
+.alerts-toggle.on{background:transparent;color:var(--text);border-color:var(--border);animation:none;}
+@keyframes alertsNudge{0%,100%{box-shadow:0 0 0 0 rgba(255,163,38,.45)}50%{box-shadow:0 0 0 6px rgba(255,163,38,0)}}
+@media(max-width:520px){.alerts-toggle span{display:none;}.alerts-toggle{padding:0 10px;}}
+.order-alerts{position:fixed;top:76px;right:20px;z-index:210;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100vw - 32px));}
+.order-alert{position:relative;background:#fff;border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:14px;
+  box-shadow:var(--shadow-lg);animation:alertIn .3s cubic-bezier(.2,.9,.3,1.2);}
+@keyframes alertIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.order-alert-body{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:none;border:none;padding:14px 40px 14px 14px;cursor:pointer;color:inherit;font:inherit;}
+.order-alert-icon{width:36px;height:36px;border-radius:50%;background:#FFF3E0;color:var(--primary-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.order-alert-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.order-alert-title{font-weight:800;font-size:14.5px;}
+.order-alert-items{font-size:13.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.order-alert-meta{font-size:12.5px;color:var(--text-secondary);}
+.order-alert-close{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:none;background:var(--background);
+  color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+@media(max-width:640px){.order-alerts{top:68px;right:16px;}}
+@media (prefers-reduced-motion: reduce){.alerts-toggle,.order-alert{animation:none;}}
+.staff-topbar .brand{color:var(--text);}

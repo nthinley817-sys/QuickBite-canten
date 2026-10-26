@@ -27,6 +27,8 @@ export default function Icon({ name, size = 20, ...rest }) {
     list: <><path d="M9 6h11" /><path d="M9 12h11" /><path d="M9 18h11" /><circle cx="4.5" cy="6" r="1" /><circle cx="4.5" cy="12" r="1" /><circle cx="4.5" cy="18" r="1" /></>,
     bowl: <><path d="M3 12h18a9 6 0 0 1-18 0z" /><path d="M12 12V5" /><path d="M9 6.5c1-1.5 4-1.5 5 0" /></>,
     box: <><path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" /></>,
+    bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></>,
+    bellOff: <><path d="M8.7 3.6A6 6 0 0 1 18 8c0 3.2.6 5.4 1.3 6.8" /><path d="M17 17H3s3-2 3-9c0-.8.1-1.5.4-2.2" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /><path d="M3 3l18 18" /></>,
     star: <path d="M12 3l2.8 5.9 6.4.8-4.7 4.5 1.2 6.4L12 17.8 6.3 20.6l1.2-6.4L2.8 9.7l6.4-.8L12 3z" />,
     filter: <path d="M4 5h16M7 12h10M10 19h4" />,
     arrowUp: <><path d="M12 19V5" /><path d="M6 11l6-6 6 6" /></>,

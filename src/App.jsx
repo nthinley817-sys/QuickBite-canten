@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { Api, setStaffToken } from "./services/api.js";
 import { CANTEENS } from "./data/canteens.js";
 import { useToasts } from "./hooks/useToasts.js";
+import { useOrderAlerts } from "./hooks/useOrderAlerts.js";
 import { nextStatus } from "./utils/format.js";
 
 import Navbar from "./components/layout/Navbar.jsx";
@@ -13,6 +14,7 @@ import Icon from "./components/icons/Icon.jsx";
 import FoodDetailModal from "./components/customer/FoodDetailModal.jsx";
 import StaffShell from "./components/staff/StaffShell.jsx";
 import OrderDetailsModal from "./components/staff/OrderDetailsModal.jsx";
+import NewOrderAlerts from "./components/staff/NewOrderAlerts.jsx";
 
 import Landing from "./pages/customer/Landing.jsx";
 import CanteenSelect from "./pages/customer/CanteenSelect.jsx";
@@ -58,6 +60,7 @@ export default function App() {
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [staffAuthed, setStaffAuthed] = useState(!!savedStaffSession);
   const [staffCanteenId, setStaffCanteenId] = useState(savedStaffSession?.canteenId ?? null);
+  const [staffOrdersLoaded, setStaffOrdersLoaded] = useState(false);
   const { toasts, push } = useToasts();
 
   const activeCanteenId = staffAuthed ? staffCanteenId : canteenId;
@@ -80,7 +83,7 @@ export default function App() {
   // Staff get their canteen's order list; customers only ever see the order
   // they placed, fetched by id.
   const loadStaffOrders = () =>
-    Api.getOrders().then((d) => setOrders(d)).catch((err) => {
+    Api.getOrders().then((d) => { setOrders(d); setStaffOrdersLoaded(true); }).catch((err) => {
       if (err.status === 401) endStaffSession("Your session has expired. Please log in again.");
     });
   const loadTrackedOrder = () => {
@@ -99,9 +102,10 @@ export default function App() {
   useEffect(() => {
     if (!watching) return;
     const id = setInterval(() => {
-      if (document.hidden) return;
+      // Staff keep polling in a background tab so new-order alerts still
+      // arrive; customers only need updates while they're looking.
       if (watching === "staff") loadStaffOrders();
-      else loadTrackedOrder().catch(() => { /* try again next tick */ });
+      else if (!document.hidden) loadTrackedOrder().catch(() => { /* try again next tick */ });
     }, ORDER_POLL_MS);
     return () => clearInterval(id);
   }, [watching, currentOrder]);
@@ -173,6 +177,7 @@ export default function App() {
     setStaffAuthed(false);
     setStaffCanteenId(null);
     setOrders([]);
+    setStaffOrdersLoaded(false);
     localStorage.removeItem(STAFF_SESSION_KEY);
     go("staffLogin");
     push(message);
@@ -222,13 +227,21 @@ export default function App() {
   const isStaffLogin = view === "staffLogin";
   const staffOrders = orders.filter((o) => o.canteenId === staffCanteenId);
 
+  // Clicking a new-order alert (card or system notification) opens that order.
+  const openAlertedOrder = useCallback((order) => {
+    setView("staffPending");
+    setStaffOrderDetail(order);
+  }, []);
+  const alerts = useOrderAlerts(staffOrders, staffAuthed && staffOrdersLoaded, openAlertedOrder);
+
   let body;
   if (isStaffLogin) {
     body = <StaffLogin go={go} onLogin={staffLogin} />;
   } else if (isStaff) {
     const staffCanteenName = CANTEENS.find((c) => c.id === staffCanteenId)?.name;
     body = (
-      <StaffShell view={view} go={go} orders={staffOrders} onLogout={staffLogout} canteenName={staffCanteenName}>
+      <StaffShell view={view} go={go} orders={staffOrders} onLogout={staffLogout} canteenName={staffCanteenName}
+        alertsOn={alerts.enabled} onToggleAlerts={alerts.toggle} notifyPermission={alerts.permission}>
         {view === "staffDashboard" && <StaffDashboard orders={staffOrders} go={go} />}
         {view === "staffPending" && (
           <OrderListPage title="Pending Orders" subtitle="New orders waiting to be started." orders={staffOrders} status="Pending"
@@ -319,6 +332,7 @@ export default function App() {
           </div>
         </Modal>
       )}
+      {isStaff && <NewOrderAlerts cards={alerts.cards} onOpen={(o) => { alerts.dismiss(o.key); openAlertedOrder(o.order); }} onDismiss={alerts.dismiss} />}
       <ToastHost toasts={toasts} />
     </div>
   );
