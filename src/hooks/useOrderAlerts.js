@@ -7,6 +7,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 const PREF_KEY = "qb_staff_alerts";
 const CARD_MS = 9000;
+// While an order is still Pending (nobody has tapped "Start Preparing"), the
+// chime repeats so a missed alert doesn't mean a missed order. Only recent
+// orders count, so a forgotten old test order can't ring forever.
+const REMIND_MS = 30_000;
+const REMIND_WINDOW_MS = 2 * 60 * 60 * 1000;
+const isWaiting = (o) =>
+  o.status === "Pending" && o.placedAt && Date.now() - new Date(o.placedAt).getTime() < REMIND_WINDOW_MS;
 const BASE_TITLE = typeof document !== "undefined" ? document.title : "QuickBite";
 
 const readPref = () => {
@@ -47,6 +54,8 @@ export function useOrderAlerts(orders, active, onOpenOrder) {
   const [cards, setCards] = useState([]);
   const seen = useRef(null); // null until the first load after login
   const unread = useRef(0);
+  const latestOrders = useRef(orders);
+  latestOrders.current = orders;
 
   // Forget what we've seen when staff log out, so the next login starts fresh.
   useEffect(() => {
@@ -86,6 +95,15 @@ export function useOrderAlerts(orders, active, onOpenOrder) {
       }
     }
   }, [orders, active, enabled, onOpenOrder]);
+
+  // Repeat the chime every 30 seconds while any recent order is still waiting.
+  useEffect(() => {
+    if (!active || !enabled) return;
+    const id = setInterval(() => {
+      if (latestOrders.current.some(isWaiting)) chime();
+    }, REMIND_MS);
+    return () => clearInterval(id);
+  }, [active, enabled]);
 
   // Coming back to the tab clears the unread count in the title.
   useEffect(() => {

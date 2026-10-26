@@ -47,7 +47,7 @@ export default function StaffShell({ view, go, children, orders, onLogout, cante
               aria-pressed={alertsOn}
               title={alertsOn && notifyPermission === "denied"
                 ? "Sound is on. Desktop notifications are blocked in your browser settings."
-                : alertsOn ? "Turn off new-order alerts" : "Get a sound and notification for every new order"}
+                : alertsOn ? "Turn off new-order alerts and reminders" : "Get a sound and notification for every new order, repeated every 30 seconds until it is started"}
             >
               <Icon name={alertsOn ? "bell" : "bellOff"} size={17} />
               <span>{alertsOn ? "Alerts on" : "Turn on order alerts"}</span>
