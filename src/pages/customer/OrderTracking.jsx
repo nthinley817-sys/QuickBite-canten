@@ -22,7 +22,7 @@ export default function OrderTracking({ order, onRefresh, go, notifyPermission, 
   const copy = {
     Pending: "Your order has been received.",
     Processing: "Your food is being prepared.",
-    Completed: "Your order is ready for collection.",
+    Completed: "Your order is ready and on its way to your table. Enjoy your meal!",
   };
 
   return (

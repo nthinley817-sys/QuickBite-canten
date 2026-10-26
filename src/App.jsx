@@ -260,7 +260,7 @@ export default function App() {
             advance={advanceOrderStatus} actionLabel="Mark Completed" openDetails={setStaffOrderDetail} />
         )}
         {view === "staffCompleted" && (
-          <OrderListPage title="Completed Orders" subtitle="Orders ready or already collected." orders={staffOrders} status="Completed"
+          <OrderListPage title="Completed Orders" subtitle="Orders ready and served to the table." orders={staffOrders} status="Completed"
             advance={advanceOrderStatus} actionLabel={null} openDetails={setStaffOrderDetail} onDelete={setDeletingOrder} />
         )}
         {view === "staffMenu" && (

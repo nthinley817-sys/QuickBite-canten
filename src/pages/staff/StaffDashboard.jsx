@@ -9,7 +9,7 @@ export default function StaffDashboard({ orders, go }) {
   const stats = [
     { label: "Pending Orders", value: pending, icon: "clock", color: "#F59E0B", bg: "#FFF8EB", trend: "Needs action", tcolor: "#92400E", tbg: "#FFF3D6", view: "staffPending" },
     { label: "Processing", value: processing, icon: "refresh", color: "#3B82F6", bg: "#EAF1FF", trend: "In kitchen", tcolor: "#1E40AF", tbg: "#DCE9FF", view: "staffProcessing" },
-    { label: "Completed Today", value: completed, icon: "checkCircle", color: "#16A34A", bg: "#EFFCF3", trend: "Collected", tcolor: "#166534", tbg: "#DFF6E6", view: "staffCompleted" },
+    { label: "Completed Today", value: completed, icon: "checkCircle", color: "#16A34A", bg: "#EFFCF3", trend: "Served", tcolor: "#166534", tbg: "#DFF6E6", view: "staffCompleted" },
     { label: "Total Orders", value: total, icon: "receipt", color: "#171717", bg: "#F1F1EE", trend: "All time today", tcolor: "#404040", tbg: "#EDEDED", view: "staffDashboard" },
   ];
   return (

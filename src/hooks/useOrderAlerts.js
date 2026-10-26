@@ -153,9 +153,14 @@ export function useOrderAlerts(orders, active, onOpenOrder) {
 // order along. Plays the chime, vibrates (Android), shows a card on screen and,
 // if they allowed it and are looking at another tab, a system notification.
 
+// Staff bring finished orders to the table, so "ready" means "on its way",
+// not "come and collect it".
 const STATUS_NOTICES = {
-  Processing: { title: "Your food is being prepared", body: "The kitchen has started on your order." },
-  Completed: { title: "Your order is ready!", body: "Please collect it at the counter." },
+  Processing: (t) => ({ title: "Your food is being prepared", body: `Table ${t} · The kitchen has started on your order.` }),
+  Completed: (t) => ({
+    title: `Thank you, Table ${t}!`,
+    body: "Thank you for coming and trusting us. Enjoy your meal — your order will be brought to your table shortly.",
+  }),
 };
 
 // Call from a tap (e.g. "Place Order") so the browser lets us play sound later.
@@ -177,18 +182,18 @@ export function useOrderStatusAlerts(order) {
     last.current = { id: order.id, status: order.status };
     // Only react to a change we saw happen, not to the first load.
     if (!prev || prev.id !== order.id || prev.status === order.status) return;
-    const info = STATUS_NOTICES[order.status];
+    const info = STATUS_NOTICES[order.status]?.(order.tableNumber);
     if (!info) return;
 
     chime();
     try { navigator.vibrate?.([250, 120, 250]); } catch { /* not supported */ }
     const key = `${order.id}-${order.status}`;
-    setNotice({ key, title: info.title, body: `Table ${order.tableNumber} · ${info.body}`, status: order.status });
+    setNotice({ key, title: info.title, body: info.body, status: order.status });
     setTimeout(() => setNotice((n) => (n && n.key === key ? null : n)), 12000);
 
     if (document.hidden && notificationsSupported() && Notification.permission === "granted") {
       try {
-        const n = new Notification(info.title, { body: `Table ${order.tableNumber} · ${info.body}`, icon: "/logoshort.png", tag: key });
+        const n = new Notification(info.title, { body: info.body, icon: "/logoshort.png", tag: key });
         n.onclick = () => { window.focus(); n.close(); };
       } catch { /* some mobile browsers only allow notifications from an installed app */ }
     }

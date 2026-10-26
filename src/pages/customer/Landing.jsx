@@ -14,7 +14,7 @@ export default function Landing({ go }) {
           <div>
             <span className="eyebrow-chip"><span className="dot" />Gyalpozhing College of IT · Dragon Block</span>
             <h1>Skip the Queue.<br />Enjoy Your <span className="accent">Bite.</span></h1>
-            <p className="lead">Scan. Order. Collect. QuickBite lets you order from Upper and Lower Canteen straight from your phone, and pick it up the moment it's ready.</p>
+            <p className="lead">Scan. Order. Enjoy. QuickBite lets you order from Upper and Lower Canteen straight from your phone, and we bring it to your table the moment it's ready.</p>
             <div className="hero-actions">
               <button className="btn btn-primary" onClick={() => go("canteens")}>Start Ordering <Icon name="chevronRight" size={17} /></button>
               <button className="btn btn-outline" onClick={() => go("canteens")}>View Menu</button>
@@ -32,7 +32,7 @@ export default function Landing({ go }) {
             </div>
             <div className="float-card float-3">
               <span className="float-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}><Icon name="checkCircle" size={17} /></span>
-              Ready for collection
+              On its way to your table
             </div>
           </div>
         </div>
@@ -59,7 +59,7 @@ export default function Landing({ go }) {
               { n: "01", t: "Scan", d: "Scan the QR code posted at your canteen.", icon: "grid" },
               { n: "02", t: "Order", d: "Choose your favourite food and add it to your cart.", icon: "cart" },
               { n: "03", t: "Track", d: "Follow your order status in real time.", icon: "clock" },
-              { n: "04", t: "Collect", d: "Pick up your food the moment it's ready.", icon: "bowl" },
+              { n: "04", t: "Enjoy", d: "We bring your food to your table the moment it's ready.", icon: "bowl" },
             ].map((s) => (
               <div className="step-card" key={s.n}>
                 <div className="step-num">{s.n}</div>
