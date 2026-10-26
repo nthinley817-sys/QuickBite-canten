@@ -9,6 +9,7 @@ import com.quickbite.dto.DsaResponses.HashLookup;
 import com.quickbite.dto.DsaResponses.HashTableView;
 import com.quickbite.dto.DsaResponses.HashView;
 import com.quickbite.dto.DsaResponses.PriorityView;
+import com.quickbite.dto.DsaResponses.ProcessNextView;
 import com.quickbite.dto.DsaResponses.QueueView;
 import com.quickbite.dto.DsaResponses.SearchView;
 import com.quickbite.dto.DsaResponses.SortView;
@@ -37,7 +38,8 @@ import java.util.function.Function;
 @Service
 public class DataStructuresService {
 
-    private static final int BUCKETS = 10;
+    /** Starting bucket count; the tables double (and rehash) past a 0.75 load factor. */
+    private static final int INITIAL_BUCKETS = 8;
 
     /** Arrival order; orders saved before createdAt existed sort first. */
     static final Comparator<Order> BY_ARRIVAL =
@@ -92,13 +94,35 @@ public class DataStructuresService {
         return order == null ? null : orderService.toDto(order);
     }
 
-    /** Pending orders enqueued in arrival order; the front is served next. */
-    public QueueView queue(String canteenId) {
+    private OrderQueue<Order> buildQueue(String canteenId) {
         OrderQueue<Order> queue = new OrderQueue<>();
         for (Order o : MergeSort.sort(pendingOrders(canteenId), BY_ARRIVAL)) {
             queue.enqueue(o);
         }
+        return queue;
+    }
+
+    private QueueView view(OrderQueue<Order> queue) {
         return new QueueView("OrderQueue (singly linked list, FIFO)", queue.size(), dto(queue.peek()), dto(queue.toList()));
+    }
+
+    /** Pending orders enqueued in arrival order; the front is served next. */
+    public QueueView queue(String canteenId) {
+        return view(buildQueue(canteenId));
+    }
+
+    /**
+     * dequeue(): takes the order at the front of the queue and starts preparing
+     * it (Pending -> Processing), exactly as if staff had tapped Start Preparing.
+     */
+    public ProcessNextView processNext(String canteenId) {
+        OrderQueue<Order> queue = buildQueue(canteenId);
+        if (queue.isEmpty()) {
+            throw new IllegalArgumentException("The queue is empty: there are no pending orders.");
+        }
+        Order next = queue.dequeue();
+        OrderDto processed = orderService.updateStatus(next.getId(), "Processing", canteenId);
+        return new ProcessNextView(processed, view(queue));
     }
 
     /** Pending orders in a binary heap keyed on urgency. */
@@ -116,11 +140,11 @@ public class DataStructuresService {
 
     /** Menu items and orders stored in hash tables keyed by id, plus an optional lookup. */
     public HashView hash(String canteenId, String key) {
-        ChainedHashTable<String, MenuItem> menuTable = new ChainedHashTable<>(BUCKETS);
+        ChainedHashTable<String, MenuItem> menuTable = new ChainedHashTable<>(INITIAL_BUCKETS);
         for (MenuItem m : menuRepository.findByCanteenId(canteenId)) {
             menuTable.put(m.getId(), m);
         }
-        ChainedHashTable<String, Order> orderTable = new ChainedHashTable<>(BUCKETS);
+        ChainedHashTable<String, Order> orderTable = new ChainedHashTable<>(INITIAL_BUCKETS);
         for (Order o : orderRepository.findByCanteenId(canteenId)) {
             orderTable.put(o.getId(), o);
         }
@@ -152,7 +176,8 @@ public class DataStructuresService {
         List<List<String>> buckets = table.bucketContents().stream()
                 .map(chain -> chain.stream().map(label).toList())
                 .toList();
-        return new HashTableView(name, keyField, table.bucketCount(), table.size(),
+        return new HashTableView(name, keyField, table.bucketCount(), table.initialBucketCount(), table.resizes(),
+                table.maxLoadFactor(), table.size(),
                 Math.round(table.loadFactor() * 100) / 100.0, table.collisions(), table.longestChain(), buckets);
     }
 

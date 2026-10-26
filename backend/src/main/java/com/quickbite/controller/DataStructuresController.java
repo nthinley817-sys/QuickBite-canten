@@ -3,11 +3,13 @@ package com.quickbite.controller;
 import com.quickbite.auth.StaffTokenService;
 import com.quickbite.dto.DsaResponses.HashView;
 import com.quickbite.dto.DsaResponses.PriorityView;
+import com.quickbite.dto.DsaResponses.ProcessNextView;
 import com.quickbite.dto.DsaResponses.QueueView;
 import com.quickbite.dto.DsaResponses.SearchView;
 import com.quickbite.dto.DsaResponses.SortView;
 import com.quickbite.service.DataStructuresService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,6 +37,12 @@ public class DataStructuresController {
     @GetMapping("/queue")
     public QueueView queue(@RequestHeader(value = AUTH, required = false) String auth) {
         return service.queue(tokens.requireStaff(auth).canteenId());
+    }
+
+    /** Dequeues the front order and moves it to Processing. */
+    @PostMapping("/queue/process-next")
+    public ProcessNextView processNext(@RequestHeader(value = AUTH, required = false) String auth) {
+        return service.processNext(tokens.requireStaff(auth).canteenId());
     }
 
     @GetMapping("/priority")

@@ -88,7 +88,8 @@ class DataStructuresTest {
 
     @Test
     void hashTableChainsCollisionsInOneBucket() {
-        ChainedHashTable<String, String> t = new ChainedHashTable<>(1); // every key collides
+        // one bucket that never grows: every key collides
+        ChainedHashTable<String, String> t = new ChainedHashTable<>(1, Double.POSITIVE_INFINITY);
         t.put("a", "A");
         t.put("b", "B");
         t.put("c", "C");
@@ -99,6 +100,21 @@ class DataStructuresTest {
         assertEquals(3, l.comparisons()); // newest at the head, so "a" is last in the chain
         t.remove("b"); // remove from the middle of a chain
         assertEquals(List.of(List.of("C", "A")), t.bucketContents());
+    }
+
+    @Test
+    void hashTableGrowsAndRehashesPastLoadFactor() {
+        ChainedHashTable<String, Integer> t = new ChainedHashTable<>(4); // grows past 0.75 entries per bucket
+        for (int i = 0; i < 100; i++) t.put("QB-" + (1000 + i), i);
+        assertEquals(100, t.size());
+        assertTrue(t.loadFactor() <= ChainedHashTable.DEFAULT_MAX_LOAD_FACTOR);
+        assertEquals(256, t.bucketCount()); // 4 -> 8 -> ... -> 256
+        assertEquals(6, t.resizes());
+        assertEquals(4, t.initialBucketCount());
+        for (int i = 0; i < 100; i++) assertEquals(i, t.get("QB-" + (1000 + i))); // nothing lost in rehashing
+        int stored = 0;
+        for (List<Integer> chain : t.bucketContents()) stored += chain.size();
+        assertEquals(100, stored);
     }
 
     @Test

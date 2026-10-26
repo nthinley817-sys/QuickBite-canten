@@ -209,6 +209,18 @@ export default function App() {
     }
   };
 
+  // Staff can bump a pending order to High priority so the priority queue serves it first.
+  const setOrderPriority = async (order, priority) => {
+    try {
+      const saved = await Api.updateOrderPriority(order.id, priority);
+      setOrders((list) => list.map((o) => (o.id === saved.id ? saved : o)));
+      setStaffOrderDetail((d) => (d && d.id === saved.id ? saved : d));
+      push(priority === "High" ? `${saved.id} marked High priority.` : `${saved.id} set back to Normal.`, "success");
+    } catch (err) {
+      staffActionFailed(err, "Failed to change priority.");
+    }
+  };
+
   const refreshOrders = async () => {
     try {
       await loadTrackedOrder();
@@ -268,7 +280,7 @@ export default function App() {
             onActionFailed={staffActionFailed} />
         )}
         {view === "staffSearchSort" && <SearchSortDemo orders={staffOrders} />}
-        {view === "staffDataStructures" && <DataStructuresDemo orders={staffOrders} menuItems={menuItems} push={push} />}
+        {view === "staffDataStructures" && <DataStructuresDemo orders={staffOrders} push={push} onOrdersChanged={loadStaffOrders} />}
       </StaffShell>
     );
   } else {
@@ -323,6 +335,7 @@ export default function App() {
           onClose={() => setStaffOrderDetail(null)}
           advance={(id) => { advanceOrderStatus(id); setStaffOrderDetail(null); }}
           onDelete={(order) => { setStaffOrderDetail(null); setDeletingOrder(order); }}
+          onSetPriority={setOrderPriority}
         />
       )}
       {deletingOrder && (

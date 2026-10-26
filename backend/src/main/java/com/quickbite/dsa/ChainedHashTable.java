@@ -11,8 +11,10 @@ import java.util.List;
  * landed there. Lookups only walk one chain, so with a good spread they take
  * O(1) on average; in the worst case (every key in one bucket) O(n).
  *
- * The bucket count is fixed so the staff page can show the same 10 buckets
- * every time; a production table would grow and rehash past a load factor.
+ * To keep chains short the table grows: once the load factor (entries per
+ * bucket) passes the maximum, the bucket array doubles and every entry is
+ * rehashed into its new bucket. Each resize is O(n), but it happens rarely
+ * enough that put() stays O(1) amortised.
  */
 public class ChainedHashTable<K, V> {
 
@@ -35,15 +37,35 @@ public class ChainedHashTable<K, V> {
         }
     }
 
-    private final Entry<K, V>[] buckets;
+    /** Grow once entries per bucket go past this, the same default java.util.HashMap uses. */
+    public static final double DEFAULT_MAX_LOAD_FACTOR = 0.75;
+
+    private Entry<K, V>[] buckets;
+    private final int initialBucketCount;
+    private final double maxLoadFactor;
     private int size;
+    private int resizes;
+
+    public ChainedHashTable(int initialBucketCount) {
+        this(initialBucketCount, DEFAULT_MAX_LOAD_FACTOR);
+    }
+
+    /** Pass Double.POSITIVE_INFINITY as maxLoadFactor for a table that never grows. */
+    public ChainedHashTable(int initialBucketCount, double maxLoadFactor) {
+        if (initialBucketCount < 1) {
+            throw new IllegalArgumentException("initialBucketCount must be at least 1");
+        }
+        if (!(maxLoadFactor > 0)) {
+            throw new IllegalArgumentException("maxLoadFactor must be positive");
+        }
+        this.initialBucketCount = initialBucketCount;
+        this.maxLoadFactor = maxLoadFactor;
+        this.buckets = newBuckets(initialBucketCount);
+    }
 
     @SuppressWarnings("unchecked")
-    public ChainedHashTable(int bucketCount) {
-        if (bucketCount < 1) {
-            throw new IllegalArgumentException("bucketCount must be at least 1");
-        }
-        this.buckets = (Entry<K, V>[]) new Entry[bucketCount];
+    private static <K, V> Entry<K, V>[] newBuckets(int count) {
+        return (Entry<K, V>[]) new Entry[count];
     }
 
     /**
@@ -79,7 +101,23 @@ public class ChainedHashTable<K, V> {
         }
         buckets[b] = new Entry<>(key, value, buckets[b]); // new entries go at the head of the chain
         size++;
+        if (loadFactor() > maxLoadFactor) {
+            resize(buckets.length * 2);
+        }
         return null;
+    }
+
+    /** Moves every entry into a bucket array of the new size. O(n). */
+    private void resize(int newBucketCount) {
+        Entry<K, V>[] old = buckets;
+        buckets = newBuckets(newBucketCount);
+        for (Entry<K, V> head : old) {
+            for (Entry<K, V> e = head; e != null; e = e.next) {
+                int b = bucketOf(e.key); // same key, new bucket count, so usually a new bucket
+                buckets[b] = new Entry<>(e.key, e.value, buckets[b]);
+            }
+        }
+        resizes++;
     }
 
     /** Returns the value for a key, or null. O(1) average. */
@@ -128,6 +166,19 @@ public class ChainedHashTable<K, V> {
 
     public int bucketCount() {
         return buckets.length;
+    }
+
+    public int initialBucketCount() {
+        return initialBucketCount;
+    }
+
+    /** How many times the bucket array has doubled. */
+    public int resizes() {
+        return resizes;
+    }
+
+    public double maxLoadFactor() {
+        return maxLoadFactor;
     }
 
     /** Stored entries per bucket. */

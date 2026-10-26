@@ -10,7 +10,7 @@ import { Api } from "../../services/api.js";
 const SOURCE = {
   queue: { file: "dsa/OrderQueue.java", ops: "enqueue O(1) · dequeue O(1) · peek O(1)" },
   priority: { file: "dsa/PriorityOrderQueue.java", ops: "add O(log n) · poll O(log n) · peek O(1)" },
-  hash: { file: "dsa/ChainedHashTable.java", ops: "put / get / remove O(1) average · O(n) worst case" },
+  hash: { file: "dsa/ChainedHashTable.java", ops: "put / get / remove O(1) average · resize + rehash O(n), amortised O(1)" },
 };
 
 function JavaBadge({ tab }) {
@@ -23,7 +23,7 @@ function JavaBadge({ tab }) {
   );
 }
 
-export default function DataStructuresDemo({ orders, push }) {
+export default function DataStructuresDemo({ orders, push, onOrdersChanged }) {
   const [tab, setTab] = useState("queue");
   const [data, setData] = useState({});
   const [error, setError] = useState(null);
@@ -40,6 +40,22 @@ export default function DataStructuresDemo({ orders, push }) {
       .catch((err) => { if (!cancelled) setError(err.userMessage || "Couldn't load from the backend."); });
     return () => { cancelled = true; };
   }, [tab, ordersKey]);
+
+  // dequeue(): the backend takes the front order off the queue and starts it.
+  const [processing, setProcessing] = useState(false);
+  const processNext = async () => {
+    setProcessing(true);
+    try {
+      const r = await Api.dsaProcessNext();
+      setData((prev) => ({ ...prev, queue: r.queue }));
+      push(`dequeue() → ${r.processed.id} (Table ${r.processed.tableNumber}) is now being prepared.`, "success");
+      onOrdersChanged();
+    } catch (err) {
+      push(err.userMessage || "Couldn't process the next order.", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const runLookup = async () => {
     if (!lookupKey.trim()) return;
@@ -75,11 +91,8 @@ export default function DataStructuresDemo({ orders, push }) {
             <span className="badge badge-normal">Queue Size: {queue.size}</span>
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn btn-outline btn-sm" onClick={() => push(queue.front ? `peek() → ${queue.front.id} (Table ${queue.front.tableNumber})` : "Queue is empty")}>Peek Next</button>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => push(queue.front ? `dequeue() → ${queue.front.id}. Start it from Pending Orders to remove it from the queue.` : "Queue is empty")}
-              >
-                Process Next
+              <button className="btn btn-primary btn-sm" disabled={!queue.front || processing} onClick={processNext}>
+                {processing ? "Processing…" : "Process Next"}
               </button>
             </div>
           </div>
@@ -102,7 +115,7 @@ export default function DataStructuresDemo({ orders, push }) {
             </div>
           </div>
           <div className="info-note" style={{ marginTop: 16 }}>
-            A singly linked list with head and tail pointers. New orders are enqueued at the rear; the kitchen serves from the front, so orders are handled first come, first served.
+            A singly linked list with head and tail pointers. New orders are enqueued at the rear; the kitchen serves from the front, so orders are handled first come, first served. Process Next calls dequeue() and starts preparing that order.
           </div>
         </div>
       )}
@@ -130,7 +143,7 @@ export default function DataStructuresDemo({ orders, push }) {
               poll() order: {priority.serveOrder.map((o) => o.id).join(" → ")}
             </p>
           )}
-          <div className="info-note">A binary min-heap: High priority comes out first, and arrival time breaks ties so equally urgent orders stay fair.</div>
+          <div className="info-note">A binary min-heap: High priority comes out first, and arrival time breaks ties so equally urgent orders stay fair. To make an order High priority, open it from Pending Orders and tap Mark High Priority.</div>
         </div>
       )}
 
@@ -158,8 +171,8 @@ export default function DataStructuresDemo({ orders, push }) {
               <div className="stat-card" key={t.name}>
                 <div className="stat-top"><span style={{ fontWeight: 800, fontSize: 15 }}>{t.name}</span></div>
                 <div className="detail-row"><span className="lbl">Stored Items</span><span>{t.size}</span></div>
-                <div className="detail-row"><span className="lbl">Buckets</span><span>{t.bucketCount}</span></div>
-                <div className="detail-row"><span className="lbl">Load Factor</span><span>{t.loadFactor}</span></div>
+                <div className="detail-row"><span className="lbl">Buckets</span><span>{t.bucketCount}{t.resizes > 0 ? ` (started at ${t.initialBucketCount}, doubled ${t.resizes}×)` : ""}</span></div>
+                <div className="detail-row"><span className="lbl">Load Factor</span><span>{t.loadFactor} (grows past {t.maxLoadFactor})</span></div>
                 <div className="detail-row"><span className="lbl">Collisions</span><span>{t.collisions} (longest chain {t.longestChain})</span></div>
                 <div className="detail-row"><span className="lbl">Collision Handling</span><span>Separate Chaining</span></div>
                 <div className="detail-row"><span className="lbl">Lookup Key</span><span>{t.keyField}</span></div>

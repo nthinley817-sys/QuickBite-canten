@@ -3,6 +3,7 @@ package com.quickbite.controller;
 import com.quickbite.auth.StaffPrincipal;
 import com.quickbite.auth.StaffTokenService;
 import com.quickbite.dto.OrderDto;
+import com.quickbite.dto.UpdatePriorityRequest;
 import com.quickbite.dto.UpdateStatusRequest;
 import com.quickbite.service.OrderService;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +50,13 @@ public class OrderController {
                                  @RequestHeader(value = AUTH, required = false) String auth) {
         StaffPrincipal staff = tokens.requireStaff(auth);
         return service.updateStatus(id, req.status(), staff.canteenId());
+    }
+
+    @PatchMapping("/{id}/priority")
+    public OrderDto updatePriority(@PathVariable String id, @RequestBody UpdatePriorityRequest req,
+                                   @RequestHeader(value = AUTH, required = false) String auth) {
+        StaffPrincipal staff = tokens.requireStaff(auth);
+        return service.updatePriority(id, req.priority(), staff.canteenId());
     }
 
     @DeleteMapping("/{id}")

@@ -31,6 +31,7 @@ public class OrderService {
     /** Order times are shown to people in the canteen, not in the server's (UTC) zone. */
     private static final ZoneId CANTEEN_ZONE = ZoneId.of("Asia/Thimphu");
     private static final Set<String> STATUSES = Set.of("Pending", "Processing", "Completed");
+    private static final Set<String> PRIORITIES = Set.of("Normal", "High");
     private static final int MAX_TABLE_NUMBER = 100;
     private static final int MAX_ITEM_QTY = 50;
 
@@ -120,6 +121,16 @@ public class OrderService {
         }
         Order order = findForCanteen(id, staffCanteenId);
         order.setStatus(status);
+        return toDto(repository.save(order));
+    }
+
+    /** Staff can mark an order High priority so the priority queue serves it first. */
+    public OrderDto updatePriority(String id, String priority, String staffCanteenId) {
+        if (priority == null || !PRIORITIES.contains(priority)) {
+            throw new IllegalArgumentException("Priority must be one of " + PRIORITIES);
+        }
+        Order order = findForCanteen(id, staffCanteenId);
+        order.setPriority(priority);
         return toDto(repository.save(order));
     }
 

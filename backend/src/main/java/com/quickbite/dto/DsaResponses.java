@@ -18,8 +18,13 @@ public final class DsaResponses {
     }
 
     /** One ChainedHashTable: its stats and, per bucket, the labels of what's in its chain. */
-    public record HashTableView(String name, String keyField, int bucketCount, int size, double loadFactor,
+    public record HashTableView(String name, String keyField, int bucketCount, int initialBucketCount,
+                                int resizes, double maxLoadFactor, int size, double loadFactor,
                                 int collisions, int longestChain, List<List<String>> buckets) {
+    }
+
+    /** Result of dequeue(): the order that was taken off the front and started, and the queue after. */
+    public record ProcessNextView(OrderDto processed, QueueView queue) {
     }
 
     /** Result of looking a key up in the hash tables. */
