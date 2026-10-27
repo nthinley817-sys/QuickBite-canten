@@ -9,12 +9,18 @@ export default function StaffLogin({ go, onLogin }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const [slow, setSlow] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-    const ok = await onLogin(staffId, password);
-    if (!ok) setError("Incorrect staff ID or password.");
+    // A sleeping free-plan server can take a while to answer the first request.
+    const slowTimer = setTimeout(() => setSlow(true), 4000);
+    const problem = await onLogin(staffId, password);
+    clearTimeout(slowTimer);
+    setSlow(false);
+    if (problem) setError(problem);
     setSubmitting(false);
   };
 
@@ -91,7 +97,7 @@ export default function StaffLogin({ go, onLogin }) {
             )}
 
             <button type="submit" className="btn btn-primary btn-block" disabled={submitting} style={{ marginTop: 6 }}>
-              <Icon name="lock" size={16} /> {submitting ? "Signing in…" : "Sign In"}
+              <Icon name="lock" size={16} /> {submitting ? (slow ? "Waking up the server…" : "Signing in…") : "Sign In"}
             </button>
           </form>
         </div>

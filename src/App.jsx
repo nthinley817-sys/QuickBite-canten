@@ -162,22 +162,27 @@ export default function App() {
     }
   };
 
+  // Returns null on success, or a message saying what went wrong, so the page
+  // never blames the password when the real problem is the network.
   const staffLogin = async (staffId, password) => {
+    let res;
     try {
-      const res = await Api.staffLogin(staffId, password);
-      if (res.success) {
-        setStaffToken(res.token);
-        setStaffAuthed(true);
-        setStaffCanteenId(res.canteenId);
-        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify({ canteenId: res.canteenId, token: res.token }));
-        go("staffDashboard");
-        push("Welcome back!", "success");
-        return true;
-      }
-      return false;
+      res = await Api.staffLogin(staffId.trim(), password);
     } catch {
-      return false;
+      return "Couldn't reach the server. It may be waking up (this can take up to a minute on the free plan). Please wait a moment and try again.";
     }
+    if (!res || !res.success) return "Incorrect staff ID or password.";
+    setStaffToken(res.token);
+    setStaffAuthed(true);
+    setStaffCanteenId(res.canteenId);
+    // Remembering the login is a convenience: if the browser blocks storage
+    // (some private modes do), staff are still logged in for this visit.
+    try {
+      localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify({ canteenId: res.canteenId, token: res.token }));
+    } catch { /* storage unavailable */ }
+    go("staffDashboard");
+    push("Welcome back!", "success");
+    return null;
   };
   function endStaffSession(message) {
     setStaffToken(null);
@@ -185,7 +190,7 @@ export default function App() {
     setStaffCanteenId(null);
     setOrders([]);
     setStaffOrdersLoaded(false);
-    localStorage.removeItem(STAFF_SESSION_KEY);
+    try { localStorage.removeItem(STAFF_SESSION_KEY); } catch { /* storage unavailable */ }
     go("staffLogin");
     push(message);
   }
